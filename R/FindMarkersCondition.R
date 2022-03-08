@@ -53,7 +53,7 @@ FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ide
     res <- results(dds, alpha = 0.1)
 
     # Shrink the log2 fold changes to be more appropriate using the apeglm method
-    res <- lfcShrink(dds, coef = colnames(coef(dds))[2], res=res, type = "apeglm")
+    res_shrink <- lfcShrink(dds, coef = colnames(coef(dds))[2], res=res, type = "apeglm")
 
     #Plots
     gg_counts <- cluster_counts
@@ -66,7 +66,7 @@ FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ide
     plotMA(res)
     dev.off()
     #Save results table
-    res <- as.data.frame(res)
+    res <- as.data.frame(res_shrink)
     write.csv(file = paste('FindMarkersCondition_outs/cluster_',cluster,"_results.csv", sep = ''), res)
   }
   print(start)

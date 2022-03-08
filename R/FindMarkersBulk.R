@@ -45,10 +45,10 @@ FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt = 0.5){
     # DESeq2
     vst <- varianceStabilizingTransformation(dds)
     dds <- DESeq(dds, test = "LRT", reduced = ~1)
-    res <- results(dds, name = paste("iscluster_other_vs_",cluster, sep = ''), alpha = 0.1)
+    res <- results(dds, name = paste("iscluster_other_vs_",cluster, sep = ''), alpha = 0.05)
 
     # Shrink the log2 fold changes to be more appropriate using the apeglm method
-    res <- lfcShrink(dds, coef = paste("iscluster_other_vs_",cluster, sep = ''), res=res, type = "apeglm")
+    res_shrink <- lfcShrink(dds, coef = paste("iscluster_other_vs_",cluster, sep = ''), res=res, type = "apeglm")
 
     #Plots
     gg_counts <- cluster_counts[,sort(colnames(cluster_counts))]
@@ -61,7 +61,7 @@ FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt = 0.5){
     plotMA(res)
     dev.off()
     #Save results table
-    res <- as.data.frame(res)
+    res <- as.data.frame(res_shrink)
     write.csv(file = paste('FindMarkersBulk_outs/cluster_',cluster,"_results.csv", sep = ''), res)
   }
   print(start)
