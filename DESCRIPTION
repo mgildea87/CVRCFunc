@@ -16,7 +16,8 @@ Imports:
     stringr,
     utils,
     grDevices,
-    BiocGenerics
+    BiocGenerics,
+    magrittr
 Encoding: UTF-8
 License: X
 LazyData: true

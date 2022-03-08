@@ -4,3 +4,6 @@ This is a simple package that will include R functions I think will be useful fo
 
 ## FindMarkersBulk()
 This function performs a similar task to Seurat's FindAllMarkers() but does so by pseudobulking by sample and then performing DESeq2. For each cluster, counts from cells are pseudobulked from the cluster of interest and from all other clusters. This generates 2 pseudobulks for each sample for each cluster. The cluster of interest pseudobulks are then compared to pseudobulks from all other clusters using DESeq2.
+
+## FindMarkersCondition()
+This function performs differential expression for each cluster (or other identity specified) between samples from 2 specified conditions. This is done via pseudobulking and DESeq2.

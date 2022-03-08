@@ -4,14 +4,16 @@
 \alias{FindMarkersBulk}
 \title{Fina all markers via pseudobulking and DESeq2}
 \usage{
-FindMarkersBulk(seurat, clus_ident, sample_ident)
+FindMarkersBulk(seurat, clus_ident, sample_ident, expfilt)
 }
 \arguments{
 \item{seurat}{A Seurat object}
 
 \item{clus_ident}{Identity for clusters. Normally 'seurat_clusters' but can be any identity}
 
-\item{sample_ident}{Sample identities. Identity class that indicates how to}
+\item{sample_ident}{Sample identities. Identity class that indicates how to partition samples}
+
+\item{expfilt}{genes that have greater than 0 counts in greater than expfilt fraction of cells will be kept for the DESeq2 model}
 }
 \value{
 .csv files with marker genes per clus_ident. .pdf files with plots
