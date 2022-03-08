@@ -8,7 +8,7 @@
 #' @importFrom BiocGenerics t
 #' @export
 
-FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt){
+FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt = 0.5){
   start <- Sys.time()
 
   dir.create("FindMarkersBulk_outs", showWarnings = FALSE)
@@ -43,7 +43,7 @@ FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt){
     keep <- rowSums(counts(dds) >= 1) >= expfilt*nrow(cluster_metadata)
     dds <- dds[keep,]
     # DESeq2
-    vst <- vst(dds, blind=TRUE)
+    vst <- varianceStabilizingTransformation(dds)
     dds <- DESeq(dds, test = "LRT", reduced = ~1)
     res <- results(dds, name = paste("iscluster_other_vs_",cluster, sep = ''), alpha = 0.1)
 

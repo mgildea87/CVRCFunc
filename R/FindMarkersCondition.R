@@ -11,7 +11,7 @@
 #' @importFrom magrittr set_colnames
 #' @export
 
-FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ident, conditions, expfilt){
+FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ident, conditions, expfilt = 0.5){
   start <- Sys.time()
 
   dir.create("FindMarkersCondition_outs", showWarnings = FALSE)
@@ -48,7 +48,7 @@ FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ide
     keep <- rowSums(counts(dds) >= 1) >= expfilt*nrow(cluster_metadata)
     dds <- dds[keep,]
     # DESeq2
-    vst <- varianceStabilizingTransformation(dds, blind=TRUE)
+    vst <- varianceStabilizingTransformation(dds)
     dds <- DESeq(dds, test = "LRT", reduced = ~1)
     res <- results(dds, alpha = 0.1)
 
