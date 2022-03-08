@@ -4,7 +4,7 @@
 \alias{FindMarkersBulk}
 \title{Fina all markers via pseudobulking and DESeq2}
 \usage{
-FindMarkersBulk(seurat, clus_ident, sample_ident, expfilt)
+FindMarkersBulk(seurat, clus_ident, sample_ident, expfilt = 0.5)
 }
 \arguments{
 \item{seurat}{A Seurat object}

@@ -10,7 +10,7 @@ FindMarkersCondition(
   sample_ident,
   condition_ident,
   conditions,
-  expfilt
+  expfilt = 0.5
 )
 }
 \arguments{
@@ -24,7 +24,7 @@ FindMarkersCondition(
 
 \item{conditions}{A vector of the 2 conditions within condition_ident to be included in the DESeq2 model.}
 
-\item{expfilt}{genes that have greater than 0 counts in greater than expfilt fraction of cells will be kept for the DESeq2 model}
+\item{expfilt}{genes that have greater than 0 counts in greater than expfilt fraction of cells will be kept for the DESeq2 model. 0.5 by default}
 }
 \value{
 .csv files with marker genes per clus_ident. .pdf files with plots
