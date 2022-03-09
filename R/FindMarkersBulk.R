@@ -18,7 +18,7 @@ FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt = 0.5){
 
   # Print out the table of cells in each cluster-sample group
   pdf(paste('FindMarkersBulk_outs/cells_per_clus_HM.pdf'))
-  pheatmap(table(seurat$seurat_clusters, seurat$new.ident), display_numbers = T, cluster_rows = F, cluster_cols = F, fontsize_number = 4)
+  pheatmap(table(seurat@meta.data[,clus_ident], seurat@meta.data[,sample_ident]), display_numbers = T, cluster_rows = F, cluster_cols = F, fontsize_number = 4)
   dev.off()
 
   for(cluster in clusters){
