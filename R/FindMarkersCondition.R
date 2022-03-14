@@ -30,7 +30,7 @@ FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ide
   split_sample <- sapply(stringr::str_split(rownames(pb), pattern = "_",  n = 2), `[`, 2)
   pb <- pb[which(split_sample %in% samplecon_table$sample),]
   splitf <- sapply(stringr::str_split(rownames(pb), pattern = "_",  n = 2), `[`, 1)
-  pb <- split.data.frame(pb, factor(splitf)) %>% lapply(function(u) set_colnames(t(u), str_extract(rownames(u), "(?<=_)[:alnum:]+")))
+  pb <- split.data.frame(pb, factor(splitf)) %>% lapply(function(u) set_colnames(t(u), str_extract(rownames(u), "(?<=_).+")))
 
   # Print out the table of cells in each cluster-sample group
   pdf(paste('FindMarkersCondition_outs/cells_per_clus_HM.pdf'))
