@@ -6,13 +6,15 @@
 #' @param conditions A vector of the 2 conditions within condition_ident to be included in the DESeq2 model.
 #' @param expfilt genes that have greater than 0 counts in greater than expfilt fraction of cells will be kept for the DESeq2 model. 0.5 by default
 #' @return .csv files with marker genes per clus_ident. .pdf files with plots
-#' @import Seurat pheatmap DESeq2 Matrix.utils reshape2 ggplot2 ggrepel stringr utils grDevices BiocGenerics
+#' @import Seurat pheatmap DESeq2 Matrix.utils reshape2 ggplot2 ggrepel stringr utils grDevices
 #' @importFrom BiocGenerics t
 #' @importFrom magrittr set_colnames
 #' @export
 
 FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ident, conditions, expfilt = 0.5){
   start <- Sys.time()
+
+  coef <- variable <- value <- NULL
 
   dir.create("FindMarkersCondition_outs", showWarnings = FALSE)
 

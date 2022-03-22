@@ -2,7 +2,7 @@
 % Please edit documentation in R/FindMarkersBulk.R
 \name{FindMarkersBulk}
 \alias{FindMarkersBulk}
-\title{Fina all markers via pseudobulking and DESeq2}
+\title{Find all markers via pseudobulking and DESeq2}
 \usage{
 FindMarkersBulk(seurat, clus_ident, sample_ident, expfilt = 0.5)
 }
@@ -19,5 +19,5 @@ FindMarkersBulk(seurat, clus_ident, sample_ident, expfilt = 0.5)
 .csv files with marker genes per clus_ident. .pdf files with plots
 }
 \description{
-Fina all markers via pseudobulking and DESeq2
+Find all markers via pseudobulking and DESeq2
 }

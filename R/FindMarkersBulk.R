@@ -1,15 +1,17 @@
-#' Fina all markers via pseudobulking and DESeq2
+#' Find all markers via pseudobulking and DESeq2
 #' @param seurat A Seurat object
 #' @param clus_ident Identity for clusters. Normally 'seurat_clusters' but can be any identity
 #' @param sample_ident Sample identities. Identity class that indicates how to partition samples
 #' @param expfilt genes that have greater than 0 counts in greater than expfilt fraction of cells will be kept for the DESeq2 model
 #' @return .csv files with marker genes per clus_ident. .pdf files with plots
-#' @import Seurat pheatmap DESeq2 Matrix.utils reshape2 ggplot2 ggrepel stringr utils grDevices BiocGenerics
+#' @import Seurat pheatmap DESeq2 Matrix.utils reshape2 ggplot2 ggrepel stringr utils grDevices
 #' @importFrom BiocGenerics t
 #' @export
 
 FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt = 0.5){
   start <- Sys.time()
+
+  coef <- variable <- value <- NULL
 
   dir.create("FindMarkersBulk_outs", showWarnings = FALSE)
 

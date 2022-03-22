@@ -2,8 +2,8 @@ Package: CVRCFunc
 Type: Package
 Title: Functions for CVRC bioinformatics
 Version: 0.1.0
-Author: Michael A. Gildea
-Maintainer: The package maintainer <yourself@somewhere.net>
+Author: Michael A Gildea
+Maintainer: Michael A Gildea <michael.gildea@n.org>
 Description: Functions for CVRC bioinformatics
 Imports:
     Seurat,
@@ -17,7 +17,9 @@ Imports:
     utils,
     grDevices,
     BiocGenerics,
-    magrittr
+    magrittr,
+    scales,
+    SeuratDisk
 Encoding: UTF-8
 License: X
 LazyData: true
