@@ -7,3 +7,9 @@ This function performs a similar task to Seurat's FindAllMarkers() but does so b
 
 ## FindMarkersCondition()
 This function performs differential expression for each cluster (or other identity specified) between samples from 2 specified conditions. This is done via pseudobulking and DESeq2.
+
+## ExportSeuratMeta()
+This function exports seurat meta data for use in RNA velocity analysis. specifically, .csv files of reformatted sample/cell barcodes, cell by cluster mappings, cell by embedding coordinates, and color palette for plotting.
+
+## ExportSeurath5ad()
+Converts and saves a seurat object integrated assay as .h5ad. For use in RNA velocity analysis.
