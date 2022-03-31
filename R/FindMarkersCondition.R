@@ -63,7 +63,7 @@ FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ide
     pdf(paste('FindMarkersCondition_outs/cluster_',cluster,"_diagnostic_plots.pdf", sep = ''))
     print(ggplot(gg_counts, aes(x = variable, y = value, fill = variable)) + geom_boxplot() +  theme_bw() + theme(axis.text.x = element_text(angle = 90), legend.position = "none") + ylab('Log10(Counts)'))
     print(DESeq2::plotPCA(vst, intgroup = "condition") +theme_classic())
-    print(DESeq2::plotPCA(vst, intgroup = "sample") +theme_classic() +geom_text_repel(aes(label = sample)))
+    print(DESeq2::plotPCA(vst, intgroup = "sample") +theme_classic() +geom_text_repel(aes(label = sample), show.legend = FALSE))
     plotDispEsts(dds)
     plotMA(res)
     dev.off()
