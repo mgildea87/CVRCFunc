@@ -4,7 +4,14 @@
 \alias{FindMarkersBulk}
 \title{Find all markers via pseudobulking and DESeq2}
 \usage{
-FindMarkersBulk(seurat, clus_ident, sample_ident, expfilt = 0.5)
+FindMarkersBulk(
+  seurat,
+  clus_ident,
+  sample_ident,
+  expfilt = 0.5,
+  n_top_genes = 50,
+  pct.in = 50
+)
 }
 \arguments{
 \item{seurat}{A Seurat object}
@@ -14,6 +21,10 @@ FindMarkersBulk(seurat, clus_ident, sample_ident, expfilt = 0.5)
 \item{sample_ident}{Sample identities. Identity class that indicates how to partition samples}
 
 \item{expfilt}{genes that have greater than 0 counts in greater than expfilt fraction of cells will be kept for the DESeq2 model}
+
+\item{n_top_genes}{number of top genes per cluster to save and make a heatmap with}
+
+\item{pct.in}{Filter threshold for top marker genes per cluster. For a given gene and cluster, if the fraction of cells with counts exceeds pct.in it is removed from top_markers.}
 }
 \value{
 .csv files with marker genes per clus_ident. .pdf files with plots

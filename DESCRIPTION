@@ -19,7 +19,11 @@ Imports:
     BiocGenerics,
     magrittr,
     scales,
-    SeuratDisk
+    SeuratDisk,
+    methods,
+    dplyr,
+    stats,
+    presto
 Encoding: UTF-8
 License: X
 LazyData: true

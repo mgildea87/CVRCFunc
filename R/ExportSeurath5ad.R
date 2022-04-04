@@ -3,7 +3,9 @@
 #' @param sample_ident Identity for samples. Genereally 'orig.ident'
 #' @param dir Directory to output h5ad file
 #' @return h5ad file with integrated assay
-#' @import Seurat SeuratDisk
+#' @import Seurat methods dplyr
+#' @importFrom stats median
+#' @importFrom SeuratDisk SaveH5Seurat
 #' @export
 
 

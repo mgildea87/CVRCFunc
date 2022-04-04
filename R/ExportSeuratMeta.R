@@ -27,7 +27,7 @@ ExportSeuratMeta <- function(seurat, clus_ident, sample_ident, dir){
     emb_frame <- cbind(emb_frame, Embeddings(seurat_obj@reductions[[i]])[,1:2])
   }
   col_name <- vector()
-  for(i in names(CD4@reductions)){
+  for(i in names(seurat@reductions)){
     col_name <- c(col_name, paste(toupper(i),"_1", sep = ""), paste(toupper(i),"_2", sep = ""))
   }
   colnames(emb_frame) <- col_name
