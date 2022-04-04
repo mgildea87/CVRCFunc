@@ -11,7 +11,7 @@
 #' @importFrom presto wilcoxauc
 #' @export
 
-FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt = 0.5, n_top_genes = 50, pct.in = 50){
+FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt = 0.5, n_top_genes = 50, pct.in = 25){
   start <- Sys.time()
 
   coef <- variable <- value <- NULL
@@ -20,6 +20,7 @@ FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt = 0.5, n_t
 
   Idents(seurat) <- clus_ident
   clusters <- unique(Idents(seurat))
+  clusters <- sort(clusters)
 
   # Print out the table of cells in each cluster-sample group
   pdf(paste('FindMarkersBulk_outs/cells_per_clus_HM.pdf'))

@@ -20,6 +20,7 @@ FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ide
 
   Idents(seurat) <- clus_ident
   clusters <- unique(Idents(seurat))
+  clusters <- sort(clusters)
 
   #Sample condition table
   samplecon_table <- unique(data.frame(sample = seurat@meta.data[[sample_ident]], condition = seurat@meta.data[[condition_ident]]))
