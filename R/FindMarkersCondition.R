@@ -44,8 +44,8 @@ FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ide
 
     cond_1_cells <- which(seurat@meta.data[[clus_ident]] == cluster & seurat@meta.data[[condition_ident]] == conditions[1])
     cond_2_cells <- which(seurat@meta.data[[clus_ident]] == cluster & seurat@meta.data[[condition_ident]] == conditions[2])
-    pct_in_cond_1 <- apply(seurat@assays$RNA@counts[,cond_1_cells], MARGIN = 1, function (x) sum(x > 0) / length(x))
-    pct_in_cond_2 <- apply(seurat@assays$RNA@counts[,cond_2_cells], MARGIN = 1, function (x) sum(x > 0) / length(x))
+    pct_in_cond_1 <- apply(seurat@assays$RNA@counts[,cond_1_cells,drop=F], MARGIN = 1, function (x) sum(x > 0) / length(x))
+    pct_in_cond_2 <- apply(seurat@assays$RNA@counts[,cond_2_cells,drop=F], MARGIN = 1, function (x) sum(x > 0) / length(x))
     pct_in <- data.frame(pct_in_cond_1, pct_in_cond_2, feature = names(pct_in_cond_1))
 
     cluster_counts <- as.data.frame(as.matrix(pb[[as.character(cluster)]]))
