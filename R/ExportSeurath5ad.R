@@ -1,4 +1,4 @@
-#' Export integrated seurat assay for RNA velocity and CellRank analysis
+#' Export integrated seurat assay for RNA velocity, CellRank, Scanpy, and other python based analysis
 #' @param seurat Path to Seurat .rds file
 #' @param sample_ident Identity for samples. Genereally 'orig.ident'
 #' @param dir Directory to output h5ad file
@@ -6,6 +6,7 @@
 #' @import Seurat methods dplyr
 #' @importFrom stats median
 #' @importFrom SeuratDisk SaveH5Seurat
+#' @importFrom SeuratDisk Convert
 #' @export
 
 

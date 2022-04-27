@@ -1,4 +1,4 @@
-#' Export meta data files for RNA velocity and CellRank analysis
+#' Export meta data files for RNA velocity, CellRank, Scanpy, and other python based analysis
 #' @param seurat Path to Seurat .rds file
 #' @param clus_ident Identity for clusters. Normally 'seurat_clusters' but can be any identity. I generally use 'annotations' to store cluster annotations
 #' @param sample_ident Identity for samples. Genereally 'orig.ident'
@@ -27,7 +27,7 @@ ExportSeuratMeta <- function(seurat, clus_ident, sample_ident, dir){
     emb_frame <- cbind(emb_frame, Embeddings(seurat_obj@reductions[[i]])[,1:2])
   }
   col_name <- vector()
-  for(i in names(seurat@reductions)){
+  for(i in names(seurat_obj@reductions)){
     col_name <- c(col_name, paste(toupper(i),"_1", sep = ""), paste(toupper(i),"_2", sep = ""))
   }
   colnames(emb_frame) <- col_name

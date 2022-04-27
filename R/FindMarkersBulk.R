@@ -92,7 +92,7 @@ FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt = 0.5, n_t
   pdf(file = 'FindMarkersBulk_outs/Top_markers_HM.pdf')
   print(DoHeatmap(subset(seurat, downsample = 1000), features = top_markers, assay = 'RNA', slot = 'scale.data', raster = F)+
           scale_fill_gradient2(low = rev(c('#d1e5f0','#67a9cf','#2166ac')), mid = "white", high = rev(c('#b2182b','#ef8a62','#fddbc7')), midpoint = 0, guide = "colourbar", aesthetics = "fill", na.value = "white") +
-          theme(text = element_text(size = 2)))
+          theme(text = element_text(size = 1)))
   dev.off()
   print(start)
   print(Sys.time())
