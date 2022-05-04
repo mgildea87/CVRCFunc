@@ -48,6 +48,7 @@ FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt = 0.5, n_t
     cluster_counts <- as.data.frame(t(as.matrix(pb)))
     cluster_metadata <- data.frame(sample_ident = sapply(stringr::str_split(colnames(cluster_counts), pattern = "_",  n = 2), `[`, 1),
                                    iscluster = sapply(stringr::str_split(colnames(cluster_counts), pattern = "_",  n = 2), `[`, 2))
+    cluster_metadata$iscluster <- factor(cluster_metadata$iscluster, levels = c('other', as.vector(cluster)))
 
     dds <- DESeqDataSetFromMatrix(cluster_counts, colData = cluster_metadata, design = ~ iscluster)
     # Filter data

@@ -86,6 +86,7 @@ FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ide
     write.csv(file = paste('FindMarkersCondition_outs/cluster_',cluster,"_results.csv", sep = ''), res_shrink)
   }
   print(start)
+  print(paste('Order of comparison in DESeq2 model.   ', colnames(coef(dds))[2]))
   print(Sys.time())
 }
 
