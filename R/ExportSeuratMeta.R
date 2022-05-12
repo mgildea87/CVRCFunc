@@ -40,6 +40,6 @@ ExportSeuratMeta <- function(seurat, clus_ident, sample_ident, dir){
   colors <- hue_pal()(length(unique(seurat_obj@meta.data[[clus_ident]])))
   write.csv(colors, file = paste(dir,clus_ident,"_colors.csv", sep = ""), row.names = F)
 
-  samples <- unique(CD4[[sample_ident]])
+  samples <- unique(seurat_obj[[sample_ident]])
   write.csv(samples, file = paste(dir,"sample_ids.csv", sep = ""), row.names = F)
 }
