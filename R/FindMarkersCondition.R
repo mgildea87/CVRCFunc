@@ -5,18 +5,19 @@
 #' @param condition_ident Identity class for conditions to be tested
 #' @param conditions A vector of the 2 conditions within condition_ident to be included in the DESeq2 model.
 #' @param expfilt genes that have greater than 0 counts in greater than expfilt fraction of cells will be kept for the DESeq2 model. 0.5 by default
+#' @param out_dir Name of output directory
 #' @return .csv files with marker genes per clus_ident. .pdf files with plots
 #' @import Seurat pheatmap DESeq2 Matrix.utils reshape2 ggplot2 ggrepel stringr utils grDevices
 #' @importFrom BiocGenerics t
 #' @importFrom magrittr set_colnames
 #' @export
 
-FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ident, conditions, expfilt = 0.5){
+FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ident, conditions, expfilt = 0.5, out_dir = "FindMarkersBulk_outs"){
   start <- Sys.time()
 
   coef <- variable <- value <- NULL
 
-  dir.create("FindMarkersCondition_outs", showWarnings = FALSE)
+  dir.create(out_dir, showWarnings = FALSE)
 
   Idents(seurat) <- clus_ident
   clusters <- unique(Idents(seurat))
@@ -36,7 +37,7 @@ FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ide
   pb <- split.data.frame(pb, factor(splitf)) %>% lapply(function(u) set_colnames(t(u), str_extract(rownames(u), "(?<=_).+")))
 
   # Print out the table of cells in each cluster-sample group
-  pdf(paste('FindMarkersCondition_outs/cells_per_clus_HM.pdf'))
+  pdf(paste(out_dir,'/cells_per_clus_HM.pdf', sep = ''))
   pheatmap(table(seurat@meta.data[,clus_ident], seurat@meta.data[,sample_ident]), display_numbers = T, cluster_rows = F, cluster_cols = F, fontsize_number = 4)
   dev.off()
 
@@ -67,7 +68,7 @@ FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ide
     #Plots
     gg_counts <- cluster_counts
     gg_counts <- melt(log10(gg_counts))
-    pdf(paste('FindMarkersCondition_outs/cluster_',cluster,"_diagnostic_plots.pdf", sep = ''))
+    pdf(paste(out_dir,'/cluster_',cluster,"_diagnostic_plots.pdf", sep = ''))
     print(ggplot(gg_counts, aes(x = variable, y = value, fill = variable)) + geom_boxplot() +  theme_bw() + theme(axis.text.x = element_text(angle = 90), legend.position = "none") + ylab('Log10(Counts)'))
     print(DESeq2::plotPCA(vst, intgroup = "condition") +theme_classic())
     print(DESeq2::plotPCA(vst, intgroup = "sample") +theme_classic() +geom_text_repel(aes(label = sample), show.legend = FALSE))
@@ -83,7 +84,7 @@ FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ide
     res_shrink[[paste('pct_in_',conditions[2], sep = '')]] <- merged_res$pct_in_cond_2
     res_shrink$feature <- NULL
 
-    write.csv(file = paste('FindMarkersCondition_outs/cluster_',cluster,"_results.csv", sep = ''), res_shrink)
+    write.csv(file = paste(out_dir,'/cluster_',cluster,"_results.csv", sep = ''), res_shrink)
   }
   print(start)
   print(paste('Order of comparison in DESeq2 model.   ', colnames(coef(dds))[2]))
