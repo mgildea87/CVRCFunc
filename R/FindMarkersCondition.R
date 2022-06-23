@@ -12,7 +12,7 @@
 #' @importFrom magrittr set_colnames
 #' @export
 
-FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ident, conditions, expfilt = 0.5, out_dir = "FindMarkersBulk_outs"){
+FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ident, conditions, expfilt = 0.5, out_dir = "FindMarkersCondition_outs"){
   start <- Sys.time()
 
   coef <- variable <- value <- NULL
@@ -51,6 +51,7 @@ FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ide
 
     cluster_counts <- as.data.frame(as.matrix(pb[[as.character(cluster)]]))
     cluster_metadata <- samplecon_table[which(samplecon_table$sample %in% colnames(cluster_counts)),]
+    cluster_metadata$condition <- factor(cluster_metadata$condition, levels = c(conditions[2], conditions[1]))
     cluster_counts <- cluster_counts[,cluster_metadata$sample]
 
     dds <- DESeqDataSetFromMatrix(cluster_counts, colData = cluster_metadata, design = ~ condition)
