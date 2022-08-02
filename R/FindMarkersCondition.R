@@ -3,16 +3,17 @@
 #' @param clus_ident Identity for clusters. Normally 'seurat_clusters' but can be any identity
 #' @param sample_ident Sample identities. Identity class that indicates how to partition samples
 #' @param condition_ident Identity class for conditions to be tested
-#' @param conditions A vector of the 2 conditions within condition_ident to be included in the DESeq2 model.
-#' @param expfilt genes that have greater than 0 counts in greater than expfilt fraction of cells will be kept for the DESeq2 model. 0.5 by default
+#' @param conditions A vector of the 2 conditions within \code{condition_ident} to be included in the DESeq2 model.
+#' @param expfilt_freq genes that have greater than \code{expfilt_counts} in greater than \code{expfilt_freq} fraction of cells will be kept for the DESeq2 model. 0.5 by default
+#' @param expfilt_counts genes with less than \code{expfilt_counts} in \code{expfilt_freq * sample number} will be removed from DESeq2 model. 1 by default.
 #' @param out_dir Name of output directory
-#' @return .csv files with marker genes per clus_ident. .pdf files with plots
+#' @return .csv files with marker genes per \code{clus_ident}. .pdf files with diagnostic plots
 #' @import Seurat pheatmap DESeq2 Matrix.utils reshape2 ggplot2 ggrepel stringr utils grDevices
 #' @importFrom BiocGenerics t
 #' @importFrom magrittr set_colnames
 #' @export
 
-FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ident, conditions, expfilt = 0.5, out_dir = "FindMarkersCondition_outs"){
+FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ident, conditions, expfilt_counts = 1, expfilt_freq = 0.5, out_dir = "FindMarkersCondition_outs"){
   start <- Sys.time()
 
   coef <- variable <- value <- NULL
@@ -56,7 +57,7 @@ FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ide
 
     dds <- DESeqDataSetFromMatrix(cluster_counts, colData = cluster_metadata, design = ~ condition)
     # Filter data
-    keep <- rowSums(counts(dds) >= 1) >= expfilt*nrow(cluster_metadata)
+    keep <- rowSums(counts(dds) >= expfilt_counts) >= expfilt_freq*nrow(cluster_metadata)
     dds <- dds[keep,]
     # DESeq2
     vst <- varianceStabilizingTransformation(dds)

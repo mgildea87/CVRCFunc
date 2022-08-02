@@ -2,17 +2,18 @@
 #' @param seurat A Seurat object
 #' @param clus_ident Identity for clusters. Normally 'seurat_clusters' but can be any identity
 #' @param sample_ident Sample identities. Identity class that indicates how to partition samples
-#' @param expfilt genes that have greater than 0 counts in greater than expfilt fraction of cells will be kept for the DESeq2 model
+#' @param expfilt_freq genes that have greater than \code{expfilt_counts} in greater than \code{expfilt_freq} fraction of cells will be kept for the DESeq2 model. 0.5 by default
+#' @param expfilt_counts genes with less than \code{expfilt_counts} in \code{expfilt_freq * sample number} will be removed from DESeq2 mode. 1 by default.
 #' @param n_top_genes number of top genes per cluster to save and make a heatmap with
-#' @param pct.in Filter threshold for top marker genes per cluster. For a given gene and cluster, if the fraction of cells with counts exceeds pct.in it is removed from top_markers.
+#' @param pct.in Filter threshold for top marker genes per cluster. For a given gene and cluster, if the fraction of cells with counts is less than pct.in it is removed from top_markers.
 #' @param out_dir Name of output directory
-#' @return .csv files with marker genes per clus_ident. .pdf files with plots
+#' @return .csv files with marker genes per \code{clus_ident}. .pdf files with plots
 #' @import Seurat pheatmap DESeq2 Matrix.utils reshape2 ggplot2 ggrepel stringr utils grDevices
 #' @importFrom BiocGenerics t
 #' @importFrom presto wilcoxauc
 #' @export
 
-FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt = 0.5, n_top_genes = 50, pct.in = 25, out_dir = "FindMarkersBulk_outs"){
+FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt_counts = 1, expfilt_freq = 0.5, n_top_genes = 50, pct.in = 25, out_dir = "FindMarkersBulk_outs"){
   start <- Sys.time()
 
   coef <- variable <- value <- NULL
@@ -53,7 +54,7 @@ FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt = 0.5, n_t
 
     dds <- DESeqDataSetFromMatrix(cluster_counts, colData = cluster_metadata, design = ~ iscluster)
     # Filter data
-    keep <- rowSums(counts(dds) >= 1) >= expfilt*nrow(cluster_metadata)
+    keep <- rowSums(counts(dds) >= expfilt_counts) >= expfilt_freq*nrow(cluster_metadata)
     dds <- dds[keep,]
     # DESeq2
     vst <- varianceStabilizingTransformation(dds)
