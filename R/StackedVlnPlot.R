@@ -1,4 +1,4 @@
-#' Generate a stacked violin plot from a Seurat object and list of genes.
+#' Generate a stacked violin plot from a Seurat object and vector of genes.
 #' @param seurat A Seurat object
 #' @param clus_ident Identity for clusters. 'seurat_clusters' by default.
 #' @param features vector of gene names to plot
