@@ -8,9 +8,11 @@ FindMarkersBulk(
   seurat,
   clus_ident,
   sample_ident,
-  expfilt = 0.5,
+  expfilt_counts = 1,
+  expfilt_freq = 0.5,
   n_top_genes = 50,
-  pct.in = 50
+  pct.in = 25,
+  out_dir = "FindMarkersBulk_outs"
 )
 }
 \arguments{
@@ -20,14 +22,18 @@ FindMarkersBulk(
 
 \item{sample_ident}{Sample identities. Identity class that indicates how to partition samples}
 
-\item{expfilt}{genes that have greater than 0 counts in greater than expfilt fraction of cells will be kept for the DESeq2 model}
+\item{expfilt_counts}{genes with less than \code{expfilt_counts} in \code{expfilt_freq * sample number} will be removed from DESeq2 mode. 1 by default.}
+
+\item{expfilt_freq}{genes that have greater than \code{expfilt_counts} in greater than \code{expfilt_freq} fraction of cells will be kept for the DESeq2 model. 0.5 by default}
 
 \item{n_top_genes}{number of top genes per cluster to save and make a heatmap with}
 
-\item{pct.in}{Filter threshold for top marker genes per cluster. For a given gene and cluster, if the fraction of cells with counts exceeds pct.in it is removed from top_markers.}
+\item{pct.in}{Filter threshold for top marker genes per cluster. For a given gene and cluster, if the fraction of cells with counts is less than pct.in it is removed from top_markers.}
+
+\item{out_dir}{Name of output directory}
 }
 \value{
-.csv files with marker genes per clus_ident. .pdf files with plots
+.csv files with marker genes per \code{clus_ident}. .pdf files with plots
 }
 \description{
 Find all markers via pseudobulking and DESeq2

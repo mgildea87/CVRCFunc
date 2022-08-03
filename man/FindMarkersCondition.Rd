@@ -10,7 +10,9 @@ FindMarkersCondition(
   sample_ident,
   condition_ident,
   conditions,
-  expfilt = 0.5
+  expfilt_counts = 1,
+  expfilt_freq = 0.5,
+  out_dir = "FindMarkersCondition_outs"
 )
 }
 \arguments{
@@ -22,12 +24,16 @@ FindMarkersCondition(
 
 \item{condition_ident}{Identity class for conditions to be tested}
 
-\item{conditions}{A vector of the 2 conditions within condition_ident to be included in the DESeq2 model.}
+\item{conditions}{A vector of the 2 conditions within \code{condition_ident} to be included in the DESeq2 model.}
 
-\item{expfilt}{genes that have greater than 0 counts in greater than expfilt fraction of cells will be kept for the DESeq2 model. 0.5 by default}
+\item{expfilt_counts}{genes with less than \code{expfilt_counts} in \code{expfilt_freq * sample number} will be removed from DESeq2 model. 1 by default.}
+
+\item{expfilt_freq}{genes that have greater than \code{expfilt_counts} in greater than \code{expfilt_freq} fraction of cells will be kept for the DESeq2 model. 0.5 by default}
+
+\item{out_dir}{Name of output directory}
 }
 \value{
-.csv files with marker genes per clus_ident. .pdf files with plots
+.csv files with marker genes per \code{clus_ident}. .pdf files with diagnostic plots
 }
 \description{
 Differential expression testing between conditions via pseudobulking and DESeq2

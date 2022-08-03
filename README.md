@@ -13,3 +13,6 @@ This function exports seurat meta data for use in RNA velocity analysis. specifi
 
 ## ExportSeurath5ad()
 Converts and saves a seurat object integrated assay as .h5ad. For use in RNA velocity analysis.
+
+##StackedVlnPlot()
+Creates a stacked violin plot from a Seurat object and a vector of gene names. Meant to emulate the Scanypy function.

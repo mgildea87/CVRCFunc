@@ -2,7 +2,7 @@
 % Please edit documentation in R/ExportSeuratMeta.R
 \name{ExportSeuratMeta}
 \alias{ExportSeuratMeta}
-\title{Export meta data files for RNA velocity and CellRank analysis}
+\title{Export meta data files for RNA velocity, CellRank, Scanpy, and other python based analysis}
 \usage{
 ExportSeuratMeta(seurat, clus_ident, sample_ident, dir)
 }
@@ -19,5 +19,5 @@ ExportSeuratMeta(seurat, clus_ident, sample_ident, dir)
 .csv files with cell by embeddings and clusters. .csv file with color palette for plotting in scVelo, CellRank, etc.
 }
 \description{
-Export meta data files for RNA velocity and CellRank analysis
+Export meta data files for RNA velocity, CellRank, Scanpy, and other python based analysis
 }

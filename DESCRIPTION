@@ -4,7 +4,7 @@ Title: Functions for CVRC bioinformatics
 Version: 0.1.0
 Author: Michael A Gildea
 Maintainer: Michael A Gildea <michael.gildea@n.org>
-Description: Functions for CVRC bioinformatics
+Description: Functions for CVRC bioinformatics.
 Imports:
     Seurat,
     pheatmap,
@@ -23,8 +23,9 @@ Imports:
     methods,
     dplyr,
     stats,
-    presto
+    presto,
+    patchwork
 Encoding: UTF-8
 License: X
 LazyData: true
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.0

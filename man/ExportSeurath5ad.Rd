@@ -2,7 +2,7 @@
 % Please edit documentation in R/ExportSeurath5ad.R
 \name{ExportSeurath5ad}
 \alias{ExportSeurath5ad}
-\title{Export integrated seurat assay for RNA velocity and CellRank analysis}
+\title{Export integrated seurat assay for RNA velocity, CellRank, Scanpy, and other python based analysis}
 \usage{
 ExportSeurath5ad(seurat, sample_ident, dir)
 }
@@ -17,5 +17,5 @@ ExportSeurath5ad(seurat, sample_ident, dir)
 h5ad file with integrated assay
 }
 \description{
-Export integrated seurat assay for RNA velocity and CellRank analysis
+Export integrated seurat assay for RNA velocity, CellRank, Scanpy, and other python based analysis
 }
