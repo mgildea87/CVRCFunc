@@ -27,8 +27,8 @@ FindMarkers <- function(seurat, clus_ident, group_1, group_2, sample_ident, expf
   clusters <- sort(clusters)
 
   # Print out the table of cells in each cluster-sample group
-  seurat@meta.data[,clus_ident] <- droplevels(seurat@meta.data[,clus_ident])
-  pdf(paste(out_dir,'/cells_per_clus_HM.pdf',sep = ''))
+  seurat@meta.data[,clus_ident] <- droplevels(factor(seurat@meta.data[,clus_ident]))
+  pdf(paste(out_dir,'/',group_1,"_",group_2,"_",'cells_per_group_HM.pdf',sep = ''))
   pheatmap(table(seurat@meta.data[,clus_ident], seurat@meta.data[,sample_ident]), display_numbers = T, cluster_rows = F, cluster_cols = F, fontsize_number = 8)
   dev.off()
 
