@@ -2,7 +2,7 @@
 % Please edit documentation in R/StackedVlnPlot.R
 \name{StackedVlnPlot}
 \alias{StackedVlnPlot}
-\title{Generate a stacked violin plot from a Seurat object and list of genes.}
+\title{Generate a stacked violin plot from a Seurat object and vector of genes.}
 \usage{
 StackedVlnPlot(
   seurat,
@@ -24,5 +24,5 @@ StackedVlnPlot(
 \item{slot}{vslot to plot from. default = 'data'}
 }
 \description{
-Generate a stacked violin plot from a Seurat object and list of genes.
+Generate a stacked violin plot from a Seurat object and vector of genes.
 }

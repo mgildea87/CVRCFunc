@@ -2,6 +2,7 @@
 
 export(ExportSeuratMeta)
 export(ExportSeurath5ad)
+export(FindMarkers)
 export(FindMarkersBulk)
 export(FindMarkersCondition)
 export(StackedVlnPlot)
