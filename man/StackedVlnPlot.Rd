@@ -9,7 +9,8 @@ StackedVlnPlot(
   clus_ident = "seurat_clusters",
   features,
   assay = "RNA",
-  slot = "data"
+  slot = "data",
+  main = ""
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ StackedVlnPlot(
 \item{assay}{assay to plot from. default = 'RNA'}
 
 \item{slot}{vslot to plot from. default = 'data'}
+
+\item{main}{Title for plot}
 }
 \description{
 Generate a stacked violin plot from a Seurat object and vector of genes.

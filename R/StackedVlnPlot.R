@@ -4,11 +4,12 @@
 #' @param features vector of gene names to plot
 #' @param assay assay to plot from. default = 'RNA'
 #' @param slot vslot to plot from. default = 'data'
-#' @import Seurat patchwork ggplot2
+#' @param main Title for plot
+#' @import Seurat patchwork ggplot2 purrr
 #' @export
 
 
-StackedVlnPlot <- function(seurat, clus_ident = 'seurat_clusters', features, assay = 'RNA', slot = 'data'){
+StackedVlnPlot <- function(seurat, clus_ident = 'seurat_clusters', features, assay = 'RNA', slot = 'data', main = ''){
   Idents(seurat) <- clus_ident
   DefaultAssay(seurat) <- assay
 
@@ -53,7 +54,7 @@ StackedVlnPlot <- function(seurat, clus_ident = 'seurat_clusters', features, ass
                               scale_y_continuous(breaks = c(y)) +
                               expand_limits(y = y))
 
-    p<- patchwork::wrap_plots(plotlist = plot_list, ncol = 1)
+    p<- patchwork::wrap_plots(plotlist = plot_list, ncol = 1) + patchwork::plot_annotation(title = main, theme = theme(plot.title = element_text(size = 18)))
     return(p)
   }
   return(Plot(obj = seurat, features = features))
