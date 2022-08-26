@@ -46,7 +46,7 @@ StackedVlnPlot <- function(seurat, clus_ident = 'seurat_clusters', features, ass
     plot_list<- purrr::map(features, function(x) modify_vlnplot(obj = obj,feature = x, ...))
 
     plot_list[[length(plot_list)]]<- plot_list[[length(plot_list)]] +
-      theme(axis.text.x=element_text(), axis.ticks.x = element_line())
+      theme(axis.text.x=element_text(angle = 45, hjust = 1, vjust = 1), axis.ticks.x = element_line())
 
     # change the y-axis tick to max value
     ymaxs<- purrr::map_dbl(plot_list, extract_max)

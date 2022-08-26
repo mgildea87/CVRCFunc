@@ -2,6 +2,7 @@
 #' @param seurat Path to Seurat .rds file
 #' @param sample_ident Identity for samples. Genereally 'orig.ident'
 #' @param dir Directory to output h5ad file
+#' @param assay which assay to save
 #' @return h5ad file with integrated assay
 #' @import Seurat methods dplyr
 #' @importFrom stats median
@@ -10,7 +11,7 @@
 #' @export
 
 
-ExportSeurath5ad <- function(seurat, sample_ident, dir){
+ExportSeurath5ad <- function(seurat, sample_ident, dir = '', assay){
 
   seurat_obj <- readRDS(file = seurat)
 
@@ -28,6 +29,6 @@ ExportSeurath5ad <- function(seurat, sample_ident, dir){
     slot(seurat_obj$SCT@SCTModel.list[[i]], 'median_umi') = median(seurat_obj$SCT@SCTModel.list[[i]]@cell.attributes$umi)
   }
   slot(seurat_obj$integrated@SCTModel.list[[1]], 'median_umi') = median(seurat_obj$integrated@SCTModel.list[[1]]@cell.attributes$umi)
-  SaveH5Seurat(seurat_obj, filename = paste(dir,"Seurat", sep = ""))
-  Convert(paste(dir,"Seurat.h5seurat",sep = ""), dest = "h5ad", overwrite = T, assay = 'integrated')
+  SaveH5Seurat(seurat_obj, filename = paste(dir,"Seurat_",assay, sep = ""))
+  Convert(paste(dir,"Seurat_",assay,".h5seurat",sep = ""), dest = "h5ad", overwrite = T, assay = assay)
 }

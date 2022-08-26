@@ -55,6 +55,12 @@ FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ide
     cluster_metadata$condition <- factor(cluster_metadata$condition, levels = c(conditions[2], conditions[1]))
     cluster_counts <- cluster_counts[,cluster_metadata$sample]
 
+    #skip loop iteration here if there are < 2 replicates in one or both conditions
+    if(length(which(cluster_metadata$condition == levels(cluster_metadata$condition)[1])) < 2 | length(which(cluster_metadata$condition == levels(cluster_metadata$condition)[2])) < 2 ){
+      print(paste('One or both conditions have fewer than 2 replicates for cluster:',cluster))
+      next
+    }
+
     dds <- DESeqDataSetFromMatrix(cluster_counts, colData = cluster_metadata, design = ~ condition)
     # Filter data
     keep <- rowSums(counts(dds) >= expfilt_counts) >= expfilt_freq*nrow(cluster_metadata)
