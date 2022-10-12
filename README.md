@@ -19,3 +19,7 @@ Converts and saves a seurat object integrated assay as .h5ad. For use in RNA vel
 
 ## StackedVlnPlot()
 Creates a stacked violin plot from a Seurat object and a vector of gene names.
+
+## UpdateAnno()
+Updates metadata in a seurat object given a user supplied .csv file.
+

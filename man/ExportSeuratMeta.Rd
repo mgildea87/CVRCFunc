@@ -4,7 +4,7 @@
 \alias{ExportSeuratMeta}
 \title{Export meta data files for RNA velocity, CellRank, Scanpy, and other python based analysis}
 \usage{
-ExportSeuratMeta(seurat, clus_ident, sample_ident, dir)
+ExportSeuratMeta(seurat, clus_ident, sample_ident, dir = "")
 }
 \arguments{
 \item{seurat}{Path to Seurat .rds file}

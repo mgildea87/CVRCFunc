@@ -9,7 +9,7 @@
 #' @export
 
 
-ExportSeuratMeta <- function(seurat, clus_ident, sample_ident, dir){
+ExportSeuratMeta <- function(seurat, clus_ident, sample_ident, dir = ''){
 
   seurat_obj <- readRDS(file = seurat)
 
