@@ -6,7 +6,7 @@
 #' @param group_2 Identity of cells within \code{clus_ident} to compare
 #' @param expfilt_freq genes that have greater than \code{expfilt_counts} in greater than \code{expfilt_freq} fraction of cells will be kept for the DESeq2 model. 0.5 by default
 #' @param expfilt_counts genes with less than \code{expfilt_counts} in \code{expfilt_freq * sample number} will be removed from DESeq2 model. 1 by default.
-#' @param alpha FDR adjusted p-value threshold for significance in plotting. 0.05 by default.
+#' @param alpha FDR adjusted p-value threshold for significance in plotting. 0.1 by default.
 #' @param out_dir Name of output directory
 #' @return .csv files with marker genes per \code{clus_ident}. .pdf files with diagnostic plots
 #' @import Seurat pheatmap DESeq2 Matrix.utils reshape2 ggplot2 ggrepel stringr utils grDevices
@@ -14,7 +14,7 @@
 #' @importFrom magrittr set_colnames
 #' @export
 
-FindMarkers <- function(seurat, clus_ident, group_1, group_2, sample_ident, expfilt_counts = 1, expfilt_freq = 0.5, out_dir = "FindMarkers", alpha = 0.05){
+FindMarkers <- function(seurat, clus_ident, group_1, group_2, sample_ident, expfilt_counts = 1, expfilt_freq = 0.5, out_dir = "FindMarkers", alpha = 0.1){
   start <- Sys.time()
 
   coef <- variable <- value <- NULL

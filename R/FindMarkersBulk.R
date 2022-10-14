@@ -7,13 +7,14 @@
 #' @param n_top_genes number of top genes per cluster to save and make a heatmap with
 #' @param pct.in Filter threshold for top marker genes per cluster. For a given gene and cluster, if the fraction of cells with counts is less than pct.in it is removed from top_markers.
 #' @param out_dir Name of output directory
+#' @param alpha FDR adjusted p-value threshold for significance in plotting. 0.1 by default.
 #' @return .csv files with marker genes per \code{clus_ident}. .pdf files with plots
 #' @import Seurat pheatmap DESeq2 Matrix.utils reshape2 ggplot2 ggrepel stringr utils grDevices
 #' @importFrom BiocGenerics t
 #' @importFrom presto wilcoxauc
 #' @export
 
-FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt_counts = 1, expfilt_freq = 0.5, n_top_genes = 50, pct.in = 25, out_dir = "FindMarkersBulk_outs"){
+FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt_counts = 1, expfilt_freq = 0.5, n_top_genes = 50, pct.in = 25, out_dir = "FindMarkersBulk_outs", alpha = 0.1){
   start <- Sys.time()
 
   coef <- variable <- value <- NULL
