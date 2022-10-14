@@ -63,6 +63,9 @@ FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt_counts = 1
 
     # Shrink the log2 fold changes to be more appropriate using the apeglm method
     res_shrink <- lfcShrink(dds, coef = colnames(coef(dds))[2], res=res, type = "apeglm")
+    res_shrink <- as.data.frame(res_shrink)
+    res_shrink$sig <- rep('Not significant', nrow(res_shrink))
+    res_shrink$sig[which(res_shrink$padj < alpha)] <- 'Significant'
 
     #Plots
     gg_counts <- cluster_counts[,sort(colnames(cluster_counts))]
@@ -73,12 +76,12 @@ FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt_counts = 1
     print(DESeq2::plotPCA(vst, intgroup = "sample_ident") +theme_classic() +geom_text_repel(aes(label = sample_ident), show.legend = FALSE))
     plotDispEsts(dds)
     plotMA(res)
+    print(ggplot(res_shrink, aes(x = log2FoldChange, y = -log10(pvalue), color = sig))+geom_point(alpha = 0.7)+scale_color_manual(values = c('grey40', 'blue'))+theme_classic())
+    print(ggplot(d, aes(x=condition, y=count)) + geom_point(position=position_jitter(w=0.1,h=0)) + ggtitle(paste('Gene:', row.names(res)[which.min(res$padj)],'\nLog2FC = ',exp_gene_logfc,'\npadj = ',exp_gene_padj, sep = '')))
     dev.off()
 
 
     #Save results table
-    res_shrink <- as.data.frame(res_shrink)
-
     #Add pct.in and pct.out
     wilcox_sub <- wilcox[which(wilcox$group == cluster),]
     res_shrink$feature <- row.names(res_shrink)

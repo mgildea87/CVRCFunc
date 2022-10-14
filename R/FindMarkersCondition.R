@@ -42,6 +42,10 @@ FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ide
   pheatmap(table(seurat@meta.data[,clus_ident], seurat@meta.data[,sample_ident]), display_numbers = T, cluster_rows = F, cluster_cols = F, fontsize_number = 4)
   dev.off()
 
+  sig_up <- vector()
+  sig_down <- vector()
+  clusters_summary <- vector()
+
   for(cluster in clusters){
 
     cond_1_cells <- which(seurat@meta.data[[clus_ident]] == cluster & seurat@meta.data[[condition_ident]] == conditions[1])
@@ -70,8 +74,20 @@ FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ide
     dds <- DESeq(dds, test = "LRT", reduced = ~1)
     res <- results(dds, alpha = 0.1)
 
+    clusters_summary <- c(clusters_summary, cluster)
+    sig_up <- c(sig_up, length(which(res$padj < alpha & res$log2FoldChange > 0)))
+    sig_down <- c(sig_down, length(which(res$padj < alpha & res$log2FoldChange < 0)))
+
     # Shrink the log2 fold changes to be more appropriate using the apeglm method
     res_shrink <- lfcShrink(dds, coef = colnames(coef(dds))[2], res=res, type = "apeglm")
+    res_shrink <- as.data.frame(res_shrink)
+    res_shrink$sig <- rep('Not significant', nrow(res_shrink))
+    res_shrink$sig[which(res_shrink$padj < alpha)] <- 'Significant'
+
+    #set up data for top gene plot
+    d <- plotCounts(dds, gene=which.min(res$padj), intgroup="condition", returnData=TRUE)
+    exp_gene_logfc <- res[which.min(res$padj),]$log2FoldChange
+    exp_gene_padj <- res[which.min(res$padj),]$padj
 
     #Plots
     gg_counts <- cluster_counts
@@ -82,10 +98,11 @@ FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ide
     print(DESeq2::plotPCA(vst, intgroup = "sample") +theme_classic() +geom_text_repel(aes(label = sample), show.legend = FALSE))
     plotDispEsts(dds)
     plotMA(res)
+    print(ggplot(res_shrink, aes(x = log2FoldChange, y = -log10(pvalue), color = sig))+geom_point(alpha = 0.7)+scale_color_manual(values = c('grey40', 'blue'))+theme_classic())
+    print(ggplot(d, aes(x=condition, y=count)) + geom_point(position=position_jitter(w=0.1,h=0)) + ggtitle(paste('Gene:', row.names(res)[which.min(res$padj)],'\nLog2FC = ',exp_gene_logfc,'\npadj = ',exp_gene_padj, sep = '')))
     dev.off()
-    #Save results table
-    res_shrink <- as.data.frame(res_shrink)
 
+    #Save results table
     res_shrink$feature <- row.names(res_shrink)
     merged_res <- merge(x = res_shrink, y = pct_in, by = 'feature', sort = F)
     res_shrink[[paste('pct_in_',conditions[1], sep = '')]] <- merged_res$pct_in_cond_1
@@ -94,6 +111,8 @@ FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ide
 
     write.csv(file = paste(out_dir,'/cluster_',cluster,"_results.csv", sep = ''), res_shrink)
   }
+  summary_results <- data.frame(cluster = clusters_summary, sig_up = sig_up, sig_down = sig_down)
+  write.csv(file = paste(out_dir,'/Summary_results.csv', sep = ''), summary_results, quote = F, row.names = F)
   print(start)
   print(paste('Order of comparison in DESeq2 model.   ', colnames(coef(dds))[2]))
   print(Sys.time())
