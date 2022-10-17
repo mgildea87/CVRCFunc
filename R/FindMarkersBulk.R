@@ -68,6 +68,11 @@ FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt_counts = 1
     res_shrink$sig <- rep('Not significant', nrow(res_shrink))
     res_shrink$sig[which(res_shrink$padj < alpha)] <- 'Significant'
 
+    #set up data for top gene plot
+    d <- plotCounts(dds, gene=which.min(res$padj), intgroup="iscluster", returnData=TRUE)
+    exp_gene_logfc <- res[which.min(res$padj),]$log2FoldChange
+    exp_gene_padj <- res[which.min(res$padj),]$padj
+
     #Plots
     gg_counts <- cluster_counts[,sort(colnames(cluster_counts))]
     gg_counts <- melt(log10(gg_counts))
@@ -78,7 +83,7 @@ FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt_counts = 1
     plotDispEsts(dds)
     plotMA(res)
     print(ggplot(res_shrink, aes(x = log2FoldChange, y = -log10(pvalue), color = sig))+geom_point(alpha = 0.7)+scale_color_manual(values = c('grey40', 'blue'))+theme_classic())
-    print(ggplot(d, aes(x=condition, y=count)) + geom_point(position=position_jitter(w=0.1,h=0)) + ggtitle(paste('Gene:', row.names(res)[which.min(res$padj)],'\nLog2FC = ',exp_gene_logfc,'\npadj = ',exp_gene_padj, sep = '')))
+    print(ggplot(d, aes(x=iscluster, y=count)) + geom_point(position=position_jitter(w=0.1,h=0)) + ggtitle(paste('Gene:', row.names(res)[which.min(res$padj)],'\nLog2FC = ',exp_gene_logfc,'\npadj = ',exp_gene_padj, sep = '')))
     dev.off()
 
 
