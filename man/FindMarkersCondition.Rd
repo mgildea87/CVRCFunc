@@ -12,7 +12,8 @@ FindMarkersCondition(
   conditions,
   expfilt_counts = 1,
   expfilt_freq = 0.5,
-  out_dir = "FindMarkersCondition_outs"
+  out_dir = "FindMarkersCondition_outs",
+  alpha = 0.1
 )
 }
 \arguments{
@@ -31,6 +32,8 @@ FindMarkersCondition(
 \item{expfilt_freq}{genes that have greater than \code{expfilt_counts} in greater than \code{expfilt_freq} fraction of cells will be kept for the DESeq2 model. 0.5 by default}
 
 \item{out_dir}{Name of output directory}
+
+\item{alpha}{FDR adjusted p-value threshold for significance in plotting. 0.1 by default.}
 }
 \value{
 .csv files with marker genes per \code{clus_ident}. .pdf files with diagnostic plots

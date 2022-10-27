@@ -13,7 +13,7 @@ FindMarkers(
   expfilt_counts = 1,
   expfilt_freq = 0.5,
   out_dir = "FindMarkers",
-  alpha = 0.05
+  alpha = 0.1
 )
 }
 \arguments{
@@ -33,7 +33,7 @@ FindMarkers(
 
 \item{out_dir}{Name of output directory}
 
-\item{alpha}{FDR adjusted p-value threshold for significance in plotting. 0.05 by default.}
+\item{alpha}{FDR adjusted p-value threshold for significance in plotting. 0.1 by default.}
 }
 \value{
 .csv files with marker genes per \code{clus_ident}. .pdf files with diagnostic plots
