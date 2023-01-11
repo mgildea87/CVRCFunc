@@ -8,13 +8,14 @@
 #' @param pct.in Filter threshold for top marker genes per cluster. For a given gene and cluster, if the fraction of cells with counts is less than pct.in it is removed from top_markers.
 #' @param out_dir Name of output directory
 #' @param alpha FDR adjusted p-value threshold for significance in plotting. 0.1 by default.
+#' @param assay Which assay to use. RNA by default. I added this parameter to enable use of ADT data when desired.
 #' @return .csv files with marker genes per \code{clus_ident}. .pdf files with plots
 #' @import Seurat pheatmap DESeq2 Matrix.utils reshape2 ggplot2 ggrepel stringr utils grDevices
 #' @importFrom BiocGenerics t
 #' @importFrom presto wilcoxauc
 #' @export
 
-FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt_counts = 1, expfilt_freq = 0.5, n_top_genes = 50, pct.in = 25, out_dir = "FindMarkersBulk_outs", alpha = 0.1){
+FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt_counts = 1, expfilt_freq = 0.5, n_top_genes = 50, pct.in = 25, out_dir = "FindMarkersBulk_outs", alpha = 0.1, assay = 'RNA'){
   start <- Sys.time()
 
   coef <- variable <- value <- NULL
@@ -31,7 +32,7 @@ FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt_counts = 1
   dev.off()
 
   #Run wilcoxauc from presto for pct.in and pct.out (maybe save the stats later for comparison?)
-  wilcox <- wilcoxauc(seurat, assay = 'data', seurat_assay = 'RNA', group_by = clus_ident)
+  wilcox <- wilcoxauc(seurat, assay = 'data', seurat_assay = assay, group_by = clus_ident)
 
   top_markers <- vector()
 
@@ -42,7 +43,7 @@ FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt_counts = 1
     groups$iscluster[which(groups$iscluster != cluster)] <- "other"
 
     # Aggregate across cluster-sample groups
-    pb <- aggregate.Matrix(t(seurat@assays$RNA@counts), groupings = groups[,2:3], fun = "sum")
+    pb <- aggregate.Matrix(t(seurat@assays[[assay]]@counts), groupings = groups[,2:3], fun = "sum")
 
     # Not every cluster is present in all samples; create a vector that represents how to split samples
     splitf <- sapply(stringr::str_split(rownames(pb), pattern = "_",  n = 2), `[`, 2)
@@ -102,7 +103,7 @@ FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt_counts = 1
   }
   write.csv(top_markers, file = paste(out_dir,'/Top_markers.csv', sep = ''), row.names = F, quote = F)
   pdf(file = paste(out_dir,'/Top_markers_HM.pdf',sep = ''))
-  print(DoHeatmap(subset(seurat, downsample = 1000), features = top_markers, assay = 'RNA', slot = 'scale.data', raster = F)+
+  print(DoHeatmap(subset(seurat, downsample = 1000), features = top_markers, assay = assay, slot = 'scale.data', raster = F)+
           scale_fill_gradient2(low = rev(c('#d1e5f0','#67a9cf','#2166ac')), mid = "white", high = rev(c('#b2182b','#ef8a62','#fddbc7')), midpoint = 0, guide = "colourbar", aesthetics = "fill", na.value = "white") +
           theme(text = element_text(size = 1)))
   dev.off()
