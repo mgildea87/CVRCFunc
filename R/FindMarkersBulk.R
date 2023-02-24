@@ -99,7 +99,7 @@ FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt_counts = 1
     write.csv(file = paste(out_dir,'/cluster_',cluster,"_results.csv", sep = ''), res_shrink)
 
     res_sig <- res_shrink[which(res_shrink$padj < 0.05 & res_shrink$pct_in > pct.in),]
-    top_markers <- c(top_markers,row.names(res_sig[order(res_sig$log2FoldChange),])[1:n_top_genes])
+    top_markers <- c(top_markers,row.names(res_sig[order(res_sig$log2FoldChange, decreasing = T),])[1:n_top_genes])
   }
   write.csv(top_markers, file = paste(out_dir,'/Top_markers.csv', sep = ''), row.names = F, quote = F)
   pdf(file = paste(out_dir,'/Top_markers_HM.pdf',sep = ''))
