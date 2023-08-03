@@ -19,7 +19,7 @@ ExportSeurath5ad <- function(seurat, sample_ident, dir = '', assay){
   cells <- strsplit(cells, split = "_")
   cells_vec <- vector()
   for(i in cells){
-      cells_vec <- c(cells_vec, substr(dplyr::last(i), start = 1, stop = nchar(dplyr::last(i))-2))
+    cells_vec <- c(cells_vec, substr(i[[grep(x = i, pattern = '^[ACTG]{16}')]], start = 1, stop = 16))
   }
   cells_vec <- paste(seurat_obj@meta.data[[sample_ident]],":",cells_vec,"x", sep = "")
   #Rename cells in scvelo format
