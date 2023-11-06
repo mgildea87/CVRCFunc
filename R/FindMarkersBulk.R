@@ -102,10 +102,13 @@ FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt_counts = 1
     top_markers <- c(top_markers,row.names(res_sig[order(res_sig$log2FoldChange, decreasing = T),])[1:n_top_genes])
   }
   write.csv(top_markers, file = paste(out_dir,'/Top_markers.csv', sep = ''), row.names = F, quote = F)
-  pdf(file = paste(out_dir,'/Top_markers_HM.pdf',sep = ''))
-  print(DoHeatmap(subset(seurat, downsample = 1000), features = top_markers, assay = assay, slot = 'scale.data', raster = F)+
-          scale_fill_gradient2(low = rev(c('#d1e5f0','#67a9cf','#2166ac')), mid = "white", high = rev(c('#b2182b','#ef8a62','#fddbc7')), midpoint = 0, guide = "colourbar", aesthetics = "fill", na.value = "white") +
-          theme(text = element_text(size = 1)))
+  avg_exp <- AverageExpression(seurat, assays = 'RNA', slot = 'data', group.by = clus_ident, features = top_markers)
+  avg_exp <- avg_exp[[assay]]
+  paletteLength <- 50
+  myColor <- colorRampPalette(c("blue", "white", "red"))(paletteLength)
+  myBreaks <- c(seq(-2, 0, length.out=ceiling(paletteLength/2) + 1), seq(2/paletteLength, 2, length.out=floor(paletteLength/2)))
+  pdf(file = paste(out_dir,'/Top_markers_HM.pdf',sep = ''), height = 25)
+  print(pheatmap(avg_exp, cluster_rows = F, scale = 'row', color = myColor, breaks = myBreaks, border_color = NA, main = 'scaled average expression', fontsize = 6))
   dev.off()
   print(start)
   print(Sys.time())
