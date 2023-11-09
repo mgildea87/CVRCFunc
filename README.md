@@ -23,3 +23,6 @@ Creates a stacked violin plot from a Seurat object and a vector of gene names.
 ## UpdateAnno()
 Updates metadata in a seurat object given a user supplied .csv file.
 
+## FindClusterSweep()
+Runs seurat's FindClusters accross a range of resolutions and outputs common clustering QC metric plots for each.
+

@@ -13,7 +13,8 @@ FindMarkersBulk(
   n_top_genes = 50,
   pct.in = 25,
   out_dir = "FindMarkersBulk_outs",
-  alpha = 0.1
+  alpha = 0.1,
+  assay = "RNA"
 )
 }
 \arguments{
@@ -34,6 +35,8 @@ FindMarkersBulk(
 \item{out_dir}{Name of output directory}
 
 \item{alpha}{FDR adjusted p-value threshold for significance in plotting. 0.1 by default.}
+
+\item{assay}{Which assay to use. RNA by default. I added this parameter to enable use of ADT data when desired.}
 }
 \value{
 .csv files with marker genes per \code{clus_ident}. .pdf files with plots

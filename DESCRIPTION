@@ -19,13 +19,20 @@ Imports:
     BiocGenerics,
     magrittr,
     scales,
-    SeuratDisk,
+    SeuratDisk (>= 0.0.0.9020),
     methods,
     dplyr,
     stats,
     presto,
-    patchwork
+    patchwork,
+    bluster,
+    cluster,
+    clustree,
+    ggbeeswarm,
+    igraph,
+    purrr,
+    reticulate
 Encoding: UTF-8
 License: X
 LazyData: true
-RoxygenNote: 7.2.1
+RoxygenNote: 7.2.3
