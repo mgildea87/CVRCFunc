@@ -16,6 +16,7 @@
 
 FindClusterSweep <- function(seurat, assay = 'RNA', resolutions = c(0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6), algorithm = 1, conda, pca_dim = c(1:30), reduction = 'pca', plot_reduction = 'umap'){
   #Clustering
+  DefaultAssay(seurat) <- assay
   if(algorithm == 4){
     use_miniconda(condaenv = conda)
     for(i in resolutions){
