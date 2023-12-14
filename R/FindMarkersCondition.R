@@ -9,7 +9,7 @@
 #' @param out_dir Name of output directory
 #' @param alpha FDR adjusted p-value threshold for significance in plotting. 0.1 by default.
 #' @return .csv files with marker genes per \code{clus_ident}. .pdf files with diagnostic plots
-#' @import Seurat pheatmap DESeq2 Matrix.utils reshape2 ggplot2 ggrepel stringr utils grDevices
+#' @import Seurat pheatmap DESeq2 reshape2 ggplot2 ggrepel stringr utils grDevices
 #' @importFrom BiocGenerics t
 #' @importFrom magrittr set_colnames
 #' @export

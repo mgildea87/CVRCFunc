@@ -10,8 +10,7 @@
 
 UpdateAnno <- function(seurat, old_anno_ident, new_anno_ident, convert_file){
   convert_file <- read.csv(convert_file)
-  
-  new_annotations <- seurat[[old_anno_ident]][,1]
+  new_annotations <- as.vector(seurat[[old_anno_ident]][,1])
   for(i in 1:nrow(convert_file)){
     new_annotations[which(new_annotations == convert_file[i,1])] <- convert_file[i,2]
   }

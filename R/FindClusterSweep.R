@@ -8,7 +8,7 @@
 #' @param reduction reduction to use for computing silhouette scores. default = 'pca'
 #' @param plot_reduction reduction to plot silhouette scores. default = 'umap'
 #' @return A seurat object with clustering. .pdf document with a series of clustering related plots
-#' @import Seurat ggplot2 bluster cluster clustree pheatmap igraph patchwork
+#' @import Seurat clustree ggplot2 bluster cluster pheatmap igraph patchwork
 #' @importFrom reticulate use_miniconda
 #' @importFrom ggbeeswarm geom_quasirandom
 #' @export
