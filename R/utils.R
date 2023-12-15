@@ -1,3 +1,4 @@
+#' @import Matrix
 aggregate.Matrix <- function (x, groupings = NULL, form = NULL, fun = "sum", ...)
 {
   if (!is(x, "Matrix"))
@@ -62,7 +63,7 @@ dMcast <- function (data, formula, fun.aggregate = "sum", value.var = NULL, as.f
                               return(x)
                             })
   attr(data, "na.action") <- na.pass
-  result <- sparse.model.matrix(newformula, data, drop.unused.levels = FALSE, row.names = FALSE)
+  result <- Matrix::sparse.model.matrix(newformula, data, drop.unused.levels = FALSE, row.names = FALSE)
   brokenNames <- grep("paste(", colnames(result), fixed = TRUE)
   colnames(result)[brokenNames] <- lapply(colnames(result)[brokenNames],
                                           function(x) {
