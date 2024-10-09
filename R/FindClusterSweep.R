@@ -7,14 +7,15 @@
 #' @param pca_dim vector of dimensions to use for computing silheoutte scores. default = 0,30
 #' @param reduction reduction to use for computing silhouette scores. default = 'pca'
 #' @param plot_reduction reduction to plot silhouette scores. default = 'umap'
+#' @param file_name plot .pdf file name. default = 'FindClusterSweep_plots'
 #' @return A seurat object with clustering. .pdf document with a series of clustering related plots
-#' @import Seurat clustree ggplot2 bluster cluster pheatmap igraph patchwork
+#' @import Seurat ggraph clustree ggplot2 bluster cluster pheatmap igraph patchwork
 #' @importFrom reticulate use_miniconda
 #' @importFrom ggbeeswarm geom_quasirandom
 #' @export
 
 
-FindClusterSweep <- function(seurat, assay = 'RNA', resolutions = c(0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6), algorithm = 1, conda, pca_dim = c(1:30), reduction = 'pca', plot_reduction = 'umap'){
+FindClusterSweep <- function(seurat, assay = 'RNA', resolutions = c(0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6), algorithm = 1, conda, pca_dim = c(1:30), reduction = 'pca', plot_reduction = 'umap', file_name = 'FindClusterSweep_plots'){
   #Clustering
   DefaultAssay(seurat) <- assay
   if(algorithm == 4){
@@ -40,13 +41,13 @@ FindClusterSweep <- function(seurat, assay = 'RNA', resolutions = c(0.2,0.4,0.6,
     cluster_numbers <- c(cluster_numbers, length(unique(seurat@meta.data[,which(colnames(seurat@meta.data) == i)])))
   }
   gg_frame_cluster_number <- data.frame(resolution = resolutions, clusters = as.numeric(cluster_numbers))
-  pdf('FindClusterSweep_plots.pdf')
+  pdf(paste0(file_name,'.pdf'))
   print(ggplot(gg_frame_cluster_number, aes(y=clusters,x=resolution))+
     geom_line(color = 'steelblue')+
     ylab('Number of clusters')+
     xlab('resolution')+
     theme_bw())
-  print(clustree::clustree(seurat, prefix = paste0(assay,"_snn_res.")))
+#  print(clustree::clustree(seurat, prefix = paste0(assay,"_snn_res."))) # This doesnt work with ggplot and ggraph. Not sure how to make it work
 
   #silhouette scores
   dist.matrix <- dist(x = Embeddings(object = seurat[[reduction]])[, pca_dim])

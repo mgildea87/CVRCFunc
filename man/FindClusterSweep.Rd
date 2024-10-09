@@ -12,7 +12,8 @@ FindClusterSweep(
   conda,
   pca_dim = c(1:30),
   reduction = "pca",
-  plot_reduction = "umap"
+  plot_reduction = "umap",
+  file_name = "FindClusterSweep_plots"
 )
 }
 \arguments{
@@ -31,6 +32,8 @@ FindClusterSweep(
 \item{reduction}{reduction to use for computing silhouette scores. default = 'pca'}
 
 \item{plot_reduction}{reduction to plot silhouette scores. default = 'umap'}
+
+\item{file_name}{plot .pdf file name. default = 'FindClusterSweep_plots'}
 }
 \value{
 A seurat object with clustering. .pdf document with a series of clustering related plots
