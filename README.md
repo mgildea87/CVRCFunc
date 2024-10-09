@@ -26,5 +26,5 @@ Updates metadata in a seurat object given a user supplied .csv file.
 ## FindClusterSweep()
 Runs seurat's FindClusters accross a range of resolutions and outputs common clustering QC metric plots for each.
 
-## Better_vlnplot()
+## BetterVlnPlot()
 Generates a violin plot with pleasing aestetics from a Seurat object and a vector of gene/feature names.
