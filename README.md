@@ -18,7 +18,7 @@ This function exports seurat meta data for use in RNA velocity analysis. specifi
 Converts and saves a seurat object integrated assay as .h5ad. For use in RNA velocity analysis.
 
 ## StackedVlnPlot()
-Creates a stacked violin plot from a Seurat object and a vector of gene names.
+Creates a stacked violin plot from a Seurat object and a vector of gene/feature names.
 
 ## UpdateAnno()
 Updates metadata in a seurat object given a user supplied .csv file.
@@ -27,4 +27,4 @@ Updates metadata in a seurat object given a user supplied .csv file.
 Runs seurat's FindClusters accross a range of resolutions and outputs common clustering QC metric plots for each.
 
 ## Better_vlnplot()
-Generate a violin plot.
+Generates a violin plot with pleasing aestetics from a Seurat object and a vector of gene/feature names.
