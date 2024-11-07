@@ -9,7 +9,6 @@ Imports:
     Seurat,
     pheatmap,
     DESeq2,
-    Matrix.utils,
     reshape2,
     ggplot2,
     ggrepel,
