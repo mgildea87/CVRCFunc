@@ -8,13 +8,14 @@
 #' @param expfilt_counts genes with less than \code{expfilt_counts} in \code{expfilt_freq * sample number} will be removed from DESeq2 model. 1 by default.
 #' @param alpha FDR adjusted p-value threshold for significance in plotting. 0.1 by default.
 #' @param out_dir Name of output directory
+#' @param assay Which assay to use. RNA by default. I added this parameter to enable use of ADT data when desired.
 #' @return .csv files with marker genes per \code{clus_ident}. .pdf files with diagnostic plots
 #' @import Seurat pheatmap DESeq2 reshape2 ggplot2 ggrepel stringr utils grDevices
 #' @importFrom BiocGenerics t
 #' @importFrom magrittr set_colnames
 #' @export
 
-FindMarkers <- function(seurat, clus_ident, group_1, group_2, sample_ident, expfilt_counts = 1, expfilt_freq = 0.5, out_dir = "FindMarkers", alpha = 0.1){
+FindMarkers <- function(seurat, clus_ident, group_1, group_2, sample_ident, expfilt_counts = 1, expfilt_freq = 0.5, out_dir = "FindMarkers", alpha = 0.1, assay = 'RNA'){
   start <- Sys.time()
 
   coef <- variable <- value <- NULL
@@ -39,8 +40,12 @@ FindMarkers <- function(seurat, clus_ident, group_1, group_2, sample_ident, expf
   groups <- seurat@meta.data[, c(clus_ident, sample_ident)]
 
   # Aggregate across cluster-sample groups
-  pb <- aggregate.Matrix(t(seurat@assays$RNA@counts), groupings = groups[,1:2], fun = "sum")
-
+  if(length(grep(seurat@version, pattern = '^4.')) == 1){
+    pb <- aggregate.Matrix(t(seurat@assays[[assay]]@counts), groupings = groups[,1:2], fun = "sum")
+  }else if (length(grep(seurat@version, pattern = '^5.')) == 1){
+    pb <- aggregate.Matrix(t(seurat@assays[[assay]]@layers$counts), groupings = groups[,1:2], fun = "sum")
+    colnames(pb) <- row.names(seurat@assays[[assay]])
+  }
   # Not every cluster is present in all samples; create a vector that represents how to split samples
   splitf <- sapply(stringr::str_split(rownames(pb), pattern = "_",  n = 2), `[`, 2)
 

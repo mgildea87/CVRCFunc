@@ -27,14 +27,24 @@ BetterVlnPlot <- function(seurat, clus_ident = 'seurat_clusters', condition_iden
     meta_sub <- melt(meta_sub)
     meta_sub_wo0 <- meta_sub
     meta_sub_wo0$value[which(meta_sub_wo0$value == 0)] <- NA
-    p <- ggplot(meta_sub, aes(x = .data[[clus_ident]], y = value, fill = .data[[clus_ident]]))+
-      geom_quasirandom(data = meta_sub, aes(x = .data[[clus_ident]], y = value, fill = .data[[clus_ident]], alpha = I(ifelse(value == 0, 0, .5))), dodge.width = 1, size = dot_size, bandwidth = 20, width = .25, shape = 21, color = 'black')+
-      geom_violin(alpha = 0.85, width = .5, color = 'grey20', scale = 'width')+
-      facet_wrap(~variable, ncol = ncol)+
-      theme_bw()+
-      theme(axis.text.x = element_text(angle = 315, hjust = 0, vjust = 1), axis.title.x = element_blank(), panel.grid = element_blank())+
-      ylab(y_axis_title)+
-      theme(strip.background = element_blank(),strip.text = element_text(hjust = 0, face="bold"))
+    if(dot_size == 0){
+      p <- ggplot(meta_sub, aes(x = .data[[clus_ident]], y = value, fill = .data[[clus_ident]]))+
+        geom_violin(alpha = 0.85, width = .5, color = 'grey20', scale = 'width')+
+        facet_wrap(~variable, ncol = ncol)+
+        theme_bw()+
+        theme(axis.text.x = element_text(angle = 315, hjust = 0, vjust = 1), axis.title.x = element_blank(), panel.grid = element_blank())+
+        ylab(y_axis_title)+
+        theme(strip.background = element_blank(),strip.text = element_text(hjust = 0, face="bold"))
+    }else{
+      p <- ggplot(meta_sub, aes(x = .data[[clus_ident]], y = value, fill = .data[[clus_ident]]))+
+        geom_quasirandom(data = meta_sub, aes(x = .data[[clus_ident]], y = value, fill = .data[[clus_ident]], alpha = I(ifelse(value == 0, 0, .5))), dodge.width = 1, size = dot_size, bandwidth = 20, width = .25, shape = 21, color = 'black')+
+        geom_violin(alpha = 0.85, width = .5, color = 'grey20', scale = 'width')+
+        facet_wrap(~variable, ncol = ncol)+
+        theme_bw()+
+        theme(axis.text.x = element_text(angle = 315, hjust = 0, vjust = 1), axis.title.x = element_blank(), panel.grid = element_blank())+
+        ylab(y_axis_title)+
+        theme(strip.background = element_blank(),strip.text = element_text(hjust = 0, face="bold"))
+    }
   }else{
     meta_sub <- seurat@meta.data[which(pull(seurat@meta.data, clus_ident) %in% idents),c(clus_ident, condition_ident)]
     exp <- seurat@assays[[assay]]@data[which(row.names(seurat@assays[[assay]]@data) %in% features),row.names(meta_sub)]
@@ -43,14 +53,24 @@ BetterVlnPlot <- function(seurat, clus_ident = 'seurat_clusters', condition_iden
     meta_sub <- melt(meta_sub)
     meta_sub_wo0 <- meta_sub
     meta_sub_wo0$value[which(meta_sub_wo0$value == 0)] <- NA
-    p <- ggplot(meta_sub, aes(x = .data[[clus_ident]], y = value, fill = .data[[condition_ident]]))+
-      geom_quasirandom(data = meta_sub, aes(x = .data[[clus_ident]], y = value, fill = .data[[condition_ident]], alpha = I(ifelse(value == 0, 0, .5))), dodge.width = .75, size = dot_size, bandwidth = 20, width = .15, shape = 21, color = 'black')+
-      geom_violin(width = .75, alpha = 0.85, color = 'grey20', scale = 'width')+
-      facet_wrap(~variable, ncol = ncol)+
-      theme_bw()+
-      theme(axis.text.x = element_text(angle = 315, hjust = 0, vjust = 1), axis.title.x = element_blank(), panel.grid = element_blank())+
-      ylab(y_axis_title)+
-      theme(strip.background = element_blank(),strip.text = element_text(hjust = 0, face="bold"))
+    if(dot_size == 0){
+      p <- ggplot(meta_sub, aes(x = .data[[clus_ident]], y = value, fill = .data[[condition_ident]]))+
+        geom_violin(width = .75, alpha = 0.85, color = 'grey20', scale = 'width')+
+        facet_wrap(~variable, ncol = ncol)+
+        theme_bw()+
+        theme(axis.text.x = element_text(angle = 315, hjust = 0, vjust = 1), axis.title.x = element_blank(), panel.grid = element_blank())+
+        ylab(y_axis_title)+
+        theme(strip.background = element_blank(),strip.text = element_text(hjust = 0, face="bold"))
+    }else{
+      p <- ggplot(meta_sub, aes(x = .data[[clus_ident]], y = value, fill = .data[[condition_ident]]))+
+        geom_quasirandom(data = meta_sub, aes(x = .data[[clus_ident]], y = value, fill = .data[[condition_ident]], alpha = I(ifelse(value == 0, 0, .5))), dodge.width = .75, size = dot_size, bandwidth = 20, width = .15, shape = 21, color = 'black')+
+        geom_violin(width = .75, alpha = 0.85, color = 'grey20', scale = 'width')+
+        facet_wrap(~variable, ncol = ncol)+
+        theme_bw()+
+        theme(axis.text.x = element_text(angle = 315, hjust = 0, vjust = 1), axis.title.x = element_blank(), panel.grid = element_blank())+
+        ylab(y_axis_title)+
+        theme(strip.background = element_blank(),strip.text = element_text(hjust = 0, face="bold"))
+    }
   }
   return(p)
 }

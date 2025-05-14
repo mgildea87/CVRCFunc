@@ -7,14 +7,15 @@
 #' @param expfilt_freq genes that have greater than \code{expfilt_counts} in greater than \code{expfilt_freq} fraction of cells will be kept for the DESeq2 model. 0.5 by default
 #' @param expfilt_counts genes with less than \code{expfilt_counts} in \code{expfilt_freq * sample number} will be removed from DESeq2 model. 1 by default.
 #' @param out_dir Name of output directory
+#' @param assay Which assay to use. RNA by default. I added this parameter to enable use of ADT data when desired.
 #' @param alpha FDR adjusted p-value threshold for significance in plotting. 0.1 by default.
 #' @return .csv files with marker genes per \code{clus_ident}. .pdf files with diagnostic plots
-#' @import Seurat pheatmap DESeq2 reshape2 ggplot2 ggrepel stringr utils grDevices
+#' @import Seurat pheatmap DESeq2 reshape2 ggplot2 ggrepel stringr utils grDevices grr
 #' @importFrom BiocGenerics t
 #' @importFrom magrittr set_colnames
 #' @export
 
-FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ident, conditions, expfilt_counts = 1, expfilt_freq = 0.5, out_dir = "FindMarkersCondition_outs", alpha = 0.1){
+FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ident, conditions, expfilt_counts = 1, expfilt_freq = 0.5, out_dir = "FindMarkersCondition_outs", alpha = 0.1, assay = 'RNA'){
   start <- Sys.time()
 
   coef <- variable <- value <- NULL
@@ -32,7 +33,13 @@ FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ide
 
   #extract count matrix
   groups <- seurat@meta.data[, c(clus_ident, sample_ident)]
-  pb <- aggregate.Matrix(t(seurat@assays$RNA@counts), groupings = groups, fun = "sum")
+
+  if(length(grep(seurat@version, pattern = '^4.')) == 1){
+    pb <- aggregate.Matrix(t(seurat@assays$RNA@counts), groupings = groups, fun = "sum")
+  }else if (length(grep(seurat@version, pattern = '^5.')) == 1){
+    pb <- aggregate.Matrix(t(seurat@assays[[assay]]@layers$counts), groupings = groups[,2:3], fun = "sum")
+    colnames(pb) <- row.names(seurat@assays[[assay]])
+  }
   split_sample <- sapply(stringr::str_split(rownames(pb), pattern = "_",  n = 2), `[`, 2)
   pb <- pb[which(split_sample %in% samplecon_table$sample),]
   splitf <- sapply(stringr::str_split(rownames(pb), pattern = "_",  n = 2), `[`, 1)

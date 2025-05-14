@@ -10,7 +10,7 @@
 #' @param alpha FDR adjusted p-value threshold for significance in plotting. 0.1 by default.
 #' @param assay Which assay to use. RNA by default. I added this parameter to enable use of ADT data when desired.
 #' @return .csv files with marker genes per \code{clus_ident}. .pdf files with plots
-#' @import Seurat pheatmap DESeq2 reshape2 ggplot2 ggrepel stringr utils grDevices
+#' @import Seurat pheatmap DESeq2 reshape2 ggplot2 ggrepel stringr utils grDevices grr
 #' @importFrom BiocGenerics t
 #' @importFrom presto wilcoxauc
 #' @export
@@ -43,7 +43,12 @@ FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt_counts = 1
     groups$iscluster[which(groups$iscluster != cluster)] <- "other"
 
     # Aggregate across cluster-sample groups
-    pb <- aggregate.Matrix(t(seurat@assays[[assay]]@counts), groupings = groups[,2:3], fun = "sum")
+    if(length(grep(seurat@version, pattern = '^4.')) == 1){
+      pb <- aggregate.Matrix(t(seurat@assays[[assay]]@counts), groupings = groups[,2:3], fun = "sum")
+    }else if (length(grep(seurat@version, pattern = '^5.')) == 1){
+      pb <- aggregate.Matrix(t(seurat@assays[[assay]]@layers$counts), groupings = groups[,2:3], fun = "sum")
+      colnames(pb) <- row.names(seurat@assays[[assay]])
+    }
 
     # Not every cluster is present in all samples; create a vector that represents how to split samples
     splitf <- sapply(stringr::str_split(rownames(pb), pattern = "_",  n = 2), `[`, 2)
