@@ -34,10 +34,10 @@ FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ide
   #extract count matrix
   groups <- seurat@meta.data[, c(clus_ident, sample_ident)]
 
-  if(length(grep(seurat@version, pattern = '^4.')) == 1){
-    pb <- aggregate.Matrix(t(seurat@assays$RNA@counts), groupings = groups, fun = "sum")
+  if(length(grep(seurat@version, pattern = '^4.')) == 1 | class(seurat@assays[[assay]]) == "ChromatinAssay"){
+    pb <- aggregate.Matrix(t(seurat@assays[[assay]]@counts), groupings = groups, fun = "sum")
   }else if (length(grep(seurat@version, pattern = '^5.')) == 1){
-    pb <- aggregate.Matrix(t(seurat@assays[[assay]]@layers$counts), groupings = groups[,2:3], fun = "sum")
+    pb <- aggregate.Matrix(t(seurat@assays[[assay]]@layers$counts), groupings = groups, fun = "sum")
     colnames(pb) <- row.names(seurat@assays[[assay]])
   }
   split_sample <- sapply(stringr::str_split(rownames(pb), pattern = "_",  n = 2), `[`, 2)
@@ -56,11 +56,19 @@ FindMarkersCondition <- function(seurat, clus_ident, sample_ident, condition_ide
 
   for(cluster in clusters){
 
-    cond_1_cells <- which(seurat@meta.data[[clus_ident]] == cluster & seurat@meta.data[[condition_ident]] == conditions[1])
-    cond_2_cells <- which(seurat@meta.data[[clus_ident]] == cluster & seurat@meta.data[[condition_ident]] == conditions[2])
-    pct_in_cond_1 <- apply(seurat@assays$RNA@counts[,cond_1_cells,drop=F], MARGIN = 1, function (x) sum(x > 0) / length(x))
-    pct_in_cond_2 <- apply(seurat@assays$RNA@counts[,cond_2_cells,drop=F], MARGIN = 1, function (x) sum(x > 0) / length(x))
-    pct_in <- data.frame(pct_in_cond_1, pct_in_cond_2, feature = names(pct_in_cond_1))
+    if(length(grep(seurat@version, pattern = '^4.')) == 1 | class(seurat@assays[[assay]]) == "ChromatinAssay"){
+      cond_1_cells <- which(seurat@meta.data[[clus_ident]] == cluster & seurat@meta.data[[condition_ident]] == conditions[1])
+      cond_2_cells <- which(seurat@meta.data[[clus_ident]] == cluster & seurat@meta.data[[condition_ident]] == conditions[2])
+      pct_in_cond_1 <- apply(seurat@assays[[assay]]@counts[,cond_1_cells,drop=F], MARGIN = 1, function (x) sum(x > 0) / length(x))
+      pct_in_cond_2 <- apply(seurat@assays[[assay]]@counts[,cond_2_cells,drop=F], MARGIN = 1, function (x) sum(x > 0) / length(x))
+      pct_in <- data.frame(pct_in_cond_1, pct_in_cond_2, feature = row.names(seurat@assays[[assay]]))
+    }else if (length(grep(seurat@version, pattern = '^5.')) == 1){
+      cond_1_cells <- which(seurat@meta.data[[clus_ident]] == cluster & seurat@meta.data[[condition_ident]] == conditions[1])
+      cond_2_cells <- which(seurat@meta.data[[clus_ident]] == cluster & seurat@meta.data[[condition_ident]] == conditions[2])
+      pct_in_cond_1 <- apply(seurat@assays[[assay]]@layers$counts[,cond_1_cells,drop=F], MARGIN = 1, function (x) sum(x > 0) / length(x))
+      pct_in_cond_2 <- apply(seurat@assays[[assay]]@layers$counts[,cond_2_cells,drop=F], MARGIN = 1, function (x) sum(x > 0) / length(x))
+      pct_in <- data.frame(pct_in_cond_1, pct_in_cond_2, feature = row.names(seurat@assays[[assay]]))
+    }
 
     cluster_counts <- as.data.frame(as.matrix(pb[[as.character(cluster)]]))
     cluster_metadata <- samplecon_table[which(samplecon_table$sample %in% colnames(cluster_counts)),]

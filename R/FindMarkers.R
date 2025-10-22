@@ -40,7 +40,7 @@ FindMarkers <- function(seurat, clus_ident, group_1, group_2, sample_ident, expf
   groups <- seurat@meta.data[, c(clus_ident, sample_ident)]
 
   # Aggregate across cluster-sample groups
-  if(length(grep(seurat@version, pattern = '^4.')) == 1){
+  if(length(grep(seurat@version, pattern = '^4.')) == 1 | class(seurat@assays[[assay]]) == "ChromatinAssay"){
     pb <- aggregate.Matrix(t(seurat@assays[[assay]]@counts), groupings = groups[,1:2], fun = "sum")
   }else if (length(grep(seurat@version, pattern = '^5.')) == 1){
     pb <- aggregate.Matrix(t(seurat@assays[[assay]]@layers$counts), groupings = groups[,1:2], fun = "sum")

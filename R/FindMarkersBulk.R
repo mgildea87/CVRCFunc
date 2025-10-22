@@ -43,7 +43,7 @@ FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt_counts = 1
     groups$iscluster[which(groups$iscluster != cluster)] <- "other"
 
     # Aggregate across cluster-sample groups
-    if(length(grep(seurat@version, pattern = '^4.')) == 1){
+    if(length(grep(seurat@version, pattern = '^4.')) == 1 | class(seurat@assays[[assay]]) == "ChromatinAssay"){
       pb <- aggregate.Matrix(t(seurat@assays[[assay]]@counts), groupings = groups[,2:3], fun = "sum")
     }else if (length(grep(seurat@version, pattern = '^5.')) == 1){
       pb <- aggregate.Matrix(t(seurat@assays[[assay]]@layers$counts), groupings = groups[,2:3], fun = "sum")
@@ -107,7 +107,7 @@ FindMarkersBulk <- function(seurat, clus_ident, sample_ident, expfilt_counts = 1
     top_markers <- c(top_markers,row.names(res_sig[order(res_sig$log2FoldChange, decreasing = T),])[1:n_top_genes])
   }
   write.csv(top_markers, file = paste(out_dir,'/Top_markers.csv', sep = ''), row.names = F, quote = F)
-  avg_exp <- AverageExpression(seurat, assays = 'RNA', slot = 'data', group.by = clus_ident, features = top_markers)
+  avg_exp <- AverageExpression(seurat, assays = assay, slot = 'data', group.by = clus_ident, features = top_markers)
   avg_exp <- avg_exp[[assay]]
   paletteLength <- 50
   myColor <- colorRampPalette(c("blue", "white", "red"))(paletteLength)
