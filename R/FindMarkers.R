@@ -34,7 +34,7 @@ FindMarkers <- function(seurat, clus_ident, group_1, group_2, sample_ident, expf
   dev.off()
 
   #Run wilcoxauc from presto for pct.in and pct.out (maybe save the stats later for comparison?)
-  wilcox <- wilcoxauc(seurat, assay = 'data', seurat_assay = 'RNA', group_by = clus_ident)
+  wilcox <- wilcoxauc(seurat, assay = 'data', seurat_assay = assay, group_by = clus_ident)
 
   # Subset metadata to only include the cluster and sample IDs to aggregate across
   groups <- seurat@meta.data[, c(clus_ident, sample_ident)]
