@@ -33,6 +33,12 @@ FindMarkers(
 
 \item{sample_ident}{Sample identities. Identity class that indicates how to partition samples}
 
+\item{batch_var}{Optional batch variable in metadata}
+
+\item{covariates}{Optional vector of additional covariate names in metadata}
+
+\item{design_formula}{Optional custom design formula. If \code{NULL}, the function builds a formula based on \code{cluster}, \code{batch_var}, and \code{covariates}.}
+
 \item{expfilt_counts}{genes with less than \code{expfilt_counts} in \code{expfilt_freq * sample number} will be removed from DESeq2 model. 1 by default.}
 
 \item{expfilt_freq}{genes that have greater than \code{expfilt_counts} in greater than \code{expfilt_freq} fraction of cells will be kept for the DESeq2 model. 0.5 by default}
@@ -41,7 +47,15 @@ FindMarkers(
 
 \item{alpha}{FDR adjusted p-value threshold for significance in plotting. 0.1 by default.}
 
-\item{assay}{Which assay to use. RNA by default. I added this parameter to enable use of ADT data when desired.}
+\item{assay}{Which assay to use. RNA by default.}
+
+\item{test_type}{DESeq2 test type, either \code{"LRT"} or \code{"Wald"}.}
+
+\item{contrast_level}{Unused currently, reserved for future contrast control.}
+
+\item{test_type}{DESeq2 test type, either \code{"LRT"} or \code{"Wald"}.}
+
+\item{contrast_level}{Unused currently, reserved for future contrast control.}
 }
 \value{
 .csv files with marker genes per \code{clus_ident}. .pdf files with diagnostic plots
@@ -49,3 +63,40 @@ FindMarkers(
 \description{
 Differential expression testing between 2 specified groups of cells via pseudobulking and DESeq2
 }
+\examples{
+## LRT test comparing group 0 vs group 1
+pair_res_lrt <- FindMarkers(
+  seurat = seu,
+  clus_ident = "seurat_clusters",
+  group_1 = "0",
+  group_2 = "1",
+  sample_ident = "sample_id",
+  test_type = "LRT",
+  out_dir = "FindMarkers_output_lrt"
+)
+
+## Wald test comparing group 0 vs group 1
+pair_res_wald <- FindMarkers(
+  seurat = seu,
+  clus_ident = "seurat_clusters",
+  group_1 = "0",
+  group_2 = "1",
+  sample_ident = "sample_id",
+  test_type = "Wald",
+  out_dir = "FindMarkers_output_wald"
+)
+
+## Custom full design formula for LRT
+full_design <- ~ cluster + batch + age + sex
+pair_res_design <- FindMarkers(
+  seurat = seu,
+  clus_ident = "seurat_clusters",
+  group_1 = "0",
+  group_2 = "1",
+  sample_ident = "sample_id",
+  design_formula = full_design,
+  test_type = "LRT",
+  out_dir = "FindMarkers_output_design"
+)
+}
+

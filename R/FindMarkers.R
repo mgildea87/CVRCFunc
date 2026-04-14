@@ -58,6 +58,26 @@ FindMarkers <- function(seurat,
     }
   }
 
+  # Validate inputs
+  if (!clus_ident %in% colnames(seurat@meta.data)) {
+    stop(paste("clus_ident", clus_ident, "not found in metadata"))
+  }
+
+  if (!all(c(group_1, group_2) %in% unique(seurat@meta.data[[clus_ident]]))) {
+    stop("One or both groups not found in the specified identity column")
+  }
+
+  if (!is.null(batch_var) && !batch_var %in% colnames(seurat@meta.data)) {
+    stop(paste("batch_var", batch_var, "not found in seurat metadata"))
+  }
+
+  if (!is.null(covariates)) {
+    missing_covs <- covariates[!covariates %in% colnames(seurat@meta.data)]
+    if (length(missing_covs) > 0) {
+      stop(paste("Covariates not found in metadata:", paste(missing_covs, collapse = ", ")))
+    }
+  }
+
   # Set identities and subset
   Idents(seurat) <- clus_ident
   seurat <- subset(seurat, idents = c(group_1, group_2))

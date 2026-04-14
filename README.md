@@ -33,6 +33,8 @@ Runs pseudobulk DE per cluster between two conditions.
 - `conditions`: a length-two vector of condition values, e.g. `c("treated", "control")`.
 - positive `log2FC` means higher expression in `conditions[1]`.
 - supports `batch_var`, `covariates`, and custom `design_formula`.
+- use `test_type = "LRT"` for likelihood ratio tests or `test_type = "Wald"` for Wald tests.
+- with `test_type = "LRT"`, the function uses a reduced model automatically when no custom design is provided.
 
 ### `FindMarkers()`
 Compares two groups of cells defined by a metadata identity.
@@ -67,14 +69,40 @@ bulk_res <- FindMarkersBulk(
   out_dir = "FindMarkersBulk_output"
 )
 
-# Condition DE within clusters
+# Condition DE within clusters (LRT)
 cond_res <- FindMarkersCondition(
   seurat = seu,
   clus_ident = "seurat_clusters",
   sample_ident = "sample_id",
   condition_ident = "condition",
   conditions = c("treated", "control"),
-  out_dir = "FindMarkersCondition_output"
+  out_dir = "FindMarkersCondition_output",
+  test_type = "LRT"
+)
+
+# Condition DE within clusters (Wald)
+cond_res_wald <- FindMarkersCondition(
+  seurat = seu,
+  clus_ident = "seurat_clusters",
+  sample_ident = "sample_id",
+  condition_ident = "condition",
+  conditions = c("treated", "control"),
+  out_dir = "FindMarkersCondition_output_wald",
+  test_type = "Wald"
+)
+
+# Condition DE with custom full and reduced designs
+full_design <- ~ condition + batch + age + sex
+reduced_design <- ~ batch + age + sex
+cond_res_design <- FindMarkersCondition(
+  seurat = seu,
+  clus_ident = "seurat_clusters",
+  sample_ident = "sample_id",
+  condition_ident = "condition",
+  conditions = c("treated", "control"),
+  design_formula = full_design,
+  out_dir = "FindMarkersCondition_output_design",
+  test_type = "LRT"
 )
 
 # Pairwise group comparison

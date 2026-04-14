@@ -70,3 +70,38 @@ Side effects:
 \description{
 Find all markers via pseudobulking and DESeq2
 }
+\examples{
+## LRT test for bulk markers
+bulk_res_lrt <- FindMarkersBulk(
+  seurat = seu,
+  clus_ident = "seurat_clusters",
+  sample_ident = "sample_id",
+  batch_var = "batch",
+  covariates = c("age", "sex"),
+  test_type = "LRT",
+  out_dir = "FindMarkersBulk_output_lrt"
+)
+
+## Wald test for bulk markers
+bulk_res_wald <- FindMarkersBulk(
+  seurat = seu,
+  clus_ident = "seurat_clusters",
+  sample_ident = "sample_id",
+  batch_var = "batch",
+  covariates = c("age", "sex"),
+  test_type = "Wald",
+  out_dir = "FindMarkersBulk_output_wald"
+)
+
+## Custom full design formula for LRT
+full_design <- ~ iscluster + batch + age + sex
+bulk_res_design <- FindMarkersBulk(
+  seurat = seu,
+  clus_ident = "seurat_clusters",
+  sample_ident = "sample_id",
+  design_formula = full_design,
+  test_type = "LRT",
+  out_dir = "FindMarkersBulk_output_design"
+)
+}
+

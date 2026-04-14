@@ -9,7 +9,7 @@ FindMarkersCondition(
   clus_ident,
   sample_ident,
   condition_ident,
-  conditions,
+  conditions = NULL,
   batch_var = NULL,
   covariates = NULL,
   design_formula = NULL,
@@ -31,7 +31,15 @@ FindMarkersCondition(
 
 \item{condition_ident}{Identity class for conditions to be tested}
 
-\item{conditions}{A vector of the 2 conditions within \code{condition_ident} to be included in the DESeq2 model.}
+\item{conditions}{A vector of exactly 2 conditions within \code{condition_ident} to compare.
+        The first element is the numerator (positive log2FC = higher in conditions[1]).
+        If \code{NULL} and \code{test_type = "LRT"}, all levels of \code{condition_ident} are used.}
+
+\item{batch_var}{Optional batch variable in metadata.}
+
+\item{covariates}{Optional vector of additional covariate names in metadata.}
+
+\item{design_formula}{Optional custom design formula. If \code{NULL}, the function builds a formula based on \code{condition}, \code{batch_var}, and \code{covariates}.}
 
 \item{expfilt_counts}{genes with less than \code{expfilt_counts} in \code{expfilt_freq * sample number} will be removed from DESeq2 model. 1 by default.}
 
@@ -41,11 +49,61 @@ FindMarkersCondition(
 
 \item{alpha}{FDR adjusted p-value threshold for significance in plotting. 0.1 by default.}
 
-\item{assay}{Which assay to use. RNA by default. I added this parameter to enable use of ADT data when desired.}
+\item{assay}{Which assay to use. RNA by default.}
+
+\item{test_type}{DESeq2 test type, either \code{"LRT"} or \code{"Wald"}.}
+
+\item{contrast_level}{Unused currently, reserved for future contrast control.}
 }
 \value{
 .csv files with marker genes per \code{clus_ident}. .pdf files with diagnostic plots
 }
 \description{
 Differential expression testing between conditions via pseudobulking and DESeq2
+}
+\examples{
+## LRT test across all conditions
+cond_res_lrt_all <- FindMarkersCondition(
+  seurat = seu,
+  clus_ident = "seurat_clusters",
+  sample_ident = "sample_id",
+  condition_ident = "condition",
+  test_type = "LRT",
+  out_dir = "FindMarkersCondition_output_lrt_all"
+)
+
+## LRT test comparing treated vs control
+cond_res_lrt <- FindMarkersCondition(
+  seurat = seu,
+  clus_ident = "seurat_clusters",
+  sample_ident = "sample_id",
+  condition_ident = "condition",
+  conditions = c("treated", "control"),
+  test_type = "LRT",
+  out_dir = "FindMarkersCondition_output_lrt"
+)
+
+## Wald test comparing treated vs control
+cond_res_wald <- FindMarkersCondition(
+  seurat = seu,
+  clus_ident = "seurat_clusters",
+  sample_ident = "sample_id",
+  condition_ident = "condition",
+  conditions = c("treated", "control"),
+  test_type = "Wald",
+  out_dir = "FindMarkersCondition_output_wald"
+)
+
+## Custom full design formula for LRT
+full_design <- ~ condition + batch + age + sex
+cond_res_design <- FindMarkersCondition(
+  seurat = seu,
+  clus_ident = "seurat_clusters",
+  sample_ident = "sample_id",
+  condition_ident = "condition",
+  conditions = c("treated", "control"),
+  design_formula = full_design,
+  test_type = "LRT",
+  out_dir = "FindMarkersCondition_output_design"
+)
 }

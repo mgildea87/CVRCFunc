@@ -5,7 +5,8 @@
 #' @param sample_ident Sample identities. Identity class that indicates how to partition samples
 #' @param condition_ident Identity class for conditions to be tested
 #' @param conditions A vector of exactly 2 conditions within \code{condition_ident} to compare.
-#'        The first element is the numerator (positive log2FC = higher in conditions[1])
+#'        The first element is the numerator (positive log2FC = higher in conditions[1]).
+#'        If \code{NULL} and \code{test_type = "LRT"}, all levels of \code{condition_ident} are used.
 #' @param batch_var Optional batch variable in metadata
 #' @param covariates Optional vector of additional covariate names in metadata
 #' @param design_formula Optional custom design formula. If NULL, will construct ~ condition + batch_var + covariates
@@ -26,7 +27,7 @@
 #'   \item{top_markers}{Vector of unique top marker genes used in heatmap}
 #'   \item{design_formula}{The design formula used}
 #'   \item{reduced_formula}{Reduced formula used for LRT (if applicable)}
-#'   \item{conditions}{The two conditions compared}
+#'   \item{conditions}{The conditions compared}
 #'   \item{params}{List of key parameters}
 #'
 #' outputs:
@@ -42,7 +43,7 @@ FindMarkersCondition <- function(seurat,
                                  clus_ident,
                                  sample_ident,
                                  condition_ident,
-                                 conditions,
+                                 conditions = NULL,
                                  batch_var = NULL,
                                  covariates = NULL,
                                  design_formula = NULL,
@@ -80,11 +81,19 @@ FindMarkersCondition <- function(seurat,
   if (!test_type %in% c("LRT", "Wald")) {
     stop("test_type must be one of 'LRT' or 'Wald'")
   }
-  if (length(conditions) != 2) {
-    stop("Exactly 2 conditions must be provided")
-  }
-  if (!all(conditions %in% unique(seurat@meta.data[[condition_ident]]))) {
-    stop("One or both conditions not found in the data")
+  # Handle conditions
+  if (test_type == "LRT" && is.null(conditions)) {
+    conditions <- sort(unique(seurat@meta.data[[condition_ident]]))
+    message("Using all levels of condition_ident for LRT: ", paste(conditions, collapse = ", "))
+  } else if (!is.null(conditions)) {
+    if (length(conditions) != 2) {
+      stop("Exactly 2 conditions must be provided when test_type = 'Wald' or when specifying conditions")
+    }
+    if (!all(conditions %in% unique(seurat@meta.data[[condition_ident]]))) {
+      stop("One or both conditions not found in the data")
+    }
+  } else {
+    stop("conditions must be specified when test_type = 'Wald'")
   }
   if (!is.null(batch_var) && !batch_var %in% colnames(seurat@meta.data)) {
     stop(paste("batch_var", batch_var, "not found in seurat metadata"))
