@@ -322,6 +322,7 @@ FindMarkersBulk <- function(seurat,
 
       ## 5.9 LFC shrinkage with fallback
       message("Shrinking log2 fold changes...")
+      res_raw <- as.data.frame(res)
       coef_names <- grep("iscluster", resultsNames(dds), value = TRUE)
       if (length(coef_names) == 0) {
         stop("No 'iscluster' coefficient found for LFC shrinkage in cluster ", cluster)
@@ -342,6 +343,9 @@ FindMarkersBulk <- function(seurat,
         }
       )
       res_shrink <- as.data.frame(res_shrink)
+      if ("log2FoldChange" %in% colnames(res_raw)) {
+        res_shrink$log2FoldChange_raw <- res_raw$log2FoldChange
+      }
       res_shrink$sig <- "Not significant"
       res_shrink$sig[which(res_shrink$padj < alpha)] <- "Significant"
 

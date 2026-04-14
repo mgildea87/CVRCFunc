@@ -13,6 +13,7 @@ FindMarkersCondition(
   batch_var = NULL,
   covariates = NULL,
   design_formula = NULL,
+  reduced_formula = NULL,
   expfilt_counts = 1,
   expfilt_freq = 0.5,
   out_dir = "FindMarkersCondition_outs",
@@ -30,6 +31,7 @@ FindMarkersCondition(
 \item{sample_ident}{Sample identities. Identity class that indicates how to partition samples}
 
 \item{condition_ident}{Identity class for conditions to be tested}
+      This must be specified even if conditions == NULL. If using test_type = 'LRT' with conditions == NULL, the first 2 levels of condition_ident will be used for some plots and for calculation of % expression cells. condition_ident must be specified in design.
 
 \item{conditions}{A vector of exactly 2 conditions within \code{condition_ident} to compare.
         The first element is the numerator (positive log2FC = higher in conditions[1]).
@@ -39,7 +41,9 @@ FindMarkersCondition(
 
 \item{covariates}{Optional vector of additional covariate names in metadata.}
 
-\item{design_formula}{Optional custom design formula. If \code{NULL}, the function builds a formula based on \code{condition}, \code{batch_var}, and \code{covariates}.}
+\item{design_formula}{Optional custom design formula. If \code{NULL}, the function builds a formula based on \code{condition_ident}, \code{batch_var}, and \code{covariates}. If providing a custom formula, all variables (except \code{condition_ident}) must be specified as \code{batch_var} or \code{covariates} to ensure they are included in the pseudobulk metadata.}
+
+\item{reduced_formula}{Optional custom reduced formula for LRT. If \code{NULL}, will construct by removing the \code{condition_ident} term from \code{design_formula}.}
 
 \item{expfilt_counts}{genes with less than \code{expfilt_counts} in \code{expfilt_freq * sample number} will be removed from DESeq2 model. 1 by default.}
 
@@ -94,16 +98,18 @@ cond_res_wald <- FindMarkersCondition(
   out_dir = "FindMarkersCondition_output_wald"
 )
 
-## Custom full design formula for LRT
-full_design <- ~ condition + batch + age + sex
-cond_res_design <- FindMarkersCondition(
+## LRT test for interaction between condition and batch
+full_design <- ~ condition * batch + age + sex
+reduced_design <- ~ condition + batch + age + sex
+cond_res_interaction <- FindMarkersCondition(
   seurat = seu,
   clus_ident = "seurat_clusters",
   sample_ident = "sample_id",
   condition_ident = "condition",
   conditions = c("treated", "control"),
   design_formula = full_design,
+  reduced_formula = reduced_design,
   test_type = "LRT",
-  out_dir = "FindMarkersCondition_output_design"
+  out_dir = "FindMarkersCondition_output_interaction"
 )
 }

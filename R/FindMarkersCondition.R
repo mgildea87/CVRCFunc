@@ -9,7 +9,8 @@
 #'        If \code{NULL} and \code{test_type = "LRT"}, all levels of \code{condition_ident} are used.
 #' @param batch_var Optional batch variable in metadata
 #' @param covariates Optional vector of additional covariate names in metadata
-#' @param design_formula Optional custom design formula. If NULL, will construct ~ condition + batch_var + covariates
+#' @param design_formula Optional custom design formula. If NULL, will construct ~ condition_ident + batch_var + covariates. If providing a custom formula, all variables (except condition_ident) must be specified as batch_var or covariates to ensure they are included in the pseudobulk metadata.
+#' @param reduced_formula Optional custom reduced formula for LRT. If NULL, will construct by removing the condition_ident term from design_formula
 #' @param expfilt_counts Genes with at least \code{expfilt_counts} counts in
 #'        \code{expfilt_freq * n_samples} samples will be kept. Default: 1
 #' @param expfilt_freq Fraction of samples that must pass \code{expfilt_counts} threshold. Default: 0.5
@@ -47,6 +48,7 @@ FindMarkersCondition <- function(seurat,
                                  batch_var = NULL,
                                  covariates = NULL,
                                  design_formula = NULL,
+                                 reduced_formula = NULL,
                                  expfilt_counts = 1,
                                  expfilt_freq = 0.5,
                                  n_top_genes = 15,
@@ -134,7 +136,7 @@ FindMarkersCondition <- function(seurat,
   ## 1. Design formula helpers
   ## ---------------------------
   .build_design <- function(batch_var, covariates) {
-    terms <- "condition"
+    terms <- condition_ident
     if (!is.null(batch_var)) {
       terms <- c(terms, batch_var)
       message("Adding batch variable to design: ", batch_var)
@@ -147,7 +149,7 @@ FindMarkersCondition <- function(seurat,
   }
 
   .build_reduced <- function(design_formula) {
-    reduced <- update(design_formula, ~ . - condition)
+    reduced <- update(design_formula, as.formula(paste("~ . -", condition_ident)))
     if (length(attr(terms(reduced), "term.labels")) == 0) {
       reduced <- ~ 1
     }
@@ -158,18 +160,22 @@ FindMarkersCondition <- function(seurat,
   if (is.null(design_formula)) {
     design_formula <- .build_design(batch_var, covariates)
     if (test_type == "LRT") {
-      reduced_formula <- .build_reduced(design_formula)
+      if (is.null(reduced_formula)) {
+        reduced_formula <- .build_reduced(design_formula)
+      }
     } else {
       reduced_formula <- NULL
     }
   } else {
     message("Using custom design formula")
     design_terms <- attr(terms(design_formula), "term.labels")
-    if (!any(grepl("^condition", design_terms))) {
-      stop("Design formula must include 'condition' (e.g. ~ condition + batch)")
+    if (!any(grepl(paste0("^", condition_ident), design_terms))) {
+      stop("Design formula must include '", condition_ident, "' (e.g. ~ ", condition_ident, " + batch)")
     }
     if (test_type == "LRT") {
-      reduced_formula <- .build_reduced(design_formula)
+      if (is.null(reduced_formula)) {
+        reduced_formula <- .build_reduced(design_formula)
+      }
     } else {
       reduced_formula <- NULL
     }
@@ -188,10 +194,11 @@ FindMarkersCondition <- function(seurat,
   samplecon_table <- unique(seurat@meta.data[, vars_to_keep, drop = FALSE])
   # Rename for internal consistency
   colnames(samplecon_table)[colnames(samplecon_table) == sample_ident]    <- "sample"
-  colnames(samplecon_table)[colnames(samplecon_table) == condition_ident] <- "condition"
+  # Keep condition_ident as is for design formula flexibility
+  condition_col <- condition_ident
 
   message("Sample-Condition Distribution:")
-  print(table(samplecon_table$condition))
+  print(table(samplecon_table[[condition_col]]))
   cat("\n")
 
   ## ---------------------------
@@ -345,7 +352,7 @@ FindMarkersCondition <- function(seurat,
         res <- results(dds, alpha = alpha)
       } else { # Wald
         dds <- DESeq(dds, test = "Wald")
-        res <- results(dds, contrast = c("condition", conditions[1], conditions[2]), alpha = alpha)
+        res <- results(dds, contrast = c(condition_ident, conditions[1], conditions[2]), alpha = alpha)
       }
 
       message("Saving DESeq2 object for cluster ", cluster, "...")
@@ -358,37 +365,49 @@ FindMarkersCondition <- function(seurat,
               sum(res$padj < alpha, na.rm = TRUE))
 
       ## 5.8 LFC shrinkage with fallback
-      message("Shrinking log2 fold changes...")
-      coef_names <- grep("condition", resultsNames(dds), value = TRUE)
-      if (length(coef_names) == 0) {
-        stop("No 'condition' coefficient found for LFC shrinkage in cluster ", cluster)
-      }
-      coef_name <- coef_names[1]
-      if (length(coef_names) > 1) {
-        message("Multiple 'condition' coefficients found; using: ", coef_name)
-      }
-
-      res_shrink <- tryCatch(
-        {
-          lfcShrink(
-            dds,
-            contrast = c("condition", conditions[1], conditions[2]),
-            res      = res,
-            type     = "ashr"   # ashr supports contrast=; apeglm does not
-          )
-        },
-        error = function(e) {
-          message("ashr shrinkage failed for cluster ", cluster, ": ", e$message,
-                  ". Falling back to 'normal' shrinkage.")
-          lfcShrink(
-            dds,
-            contrast = c("condition", conditions[1], conditions[2]),
-            res      = res,
-            type     = "normal"
-          )
+      if (test_type == "Wald") {
+        message("Shrinking log2 fold changes...")
+        res_raw <- as.data.frame(res)
+        coef_names <- grep(condition_ident, resultsNames(dds), value = TRUE)
+        if (length(coef_names) == 0) {
+          stop("No '", condition_ident, "' coefficient found for LFC shrinkage in cluster ", cluster)
         }
-      )
-      res_shrink      <- as.data.frame(res_shrink)
+        coef_name <- coef_names[1]
+        if (length(coef_names) > 1) {
+          message("Multiple '", condition_ident, "' coefficients found; using: ", coef_name)
+        }
+
+        res_shrink <- tryCatch(
+          {
+            lfcShrink(
+              dds,
+              contrast = c(condition_ident, conditions[1], conditions[2]),
+              res      = res,
+              type     = "ashr"   # ashr supports contrast=; apeglm does not
+            )
+          },
+          error = function(e) {
+            message("ashr shrinkage failed for cluster ", cluster, ": ", e$message,
+                    ". Falling back to 'normal' shrinkage.")
+            lfcShrink(
+              dds,
+              contrast = c(condition_ident, conditions[1], conditions[2]),
+              res      = res,
+              type     = "normal"
+            )
+          }
+        )
+        res_shrink <- as.data.frame(res_shrink)
+        if ("log2FoldChange" %in% colnames(res_raw)) {
+          res_shrink$log2FoldChange_raw <- res_raw$log2FoldChange
+        }
+      } else {
+        message("Skipping LFC shrinkage for LRT; using raw DESeq2 results.")
+        res_shrink <- as.data.frame(res)
+        if ("log2FoldChange" %in% colnames(res_shrink)) {
+          res_shrink$log2FoldChange_raw <- res_shrink$log2FoldChange
+        }
+      }
       res_shrink$sig  <- "Not significant"
       res_shrink$sig[which(res_shrink$padj < alpha)] <- "Significant"
 
@@ -397,7 +416,7 @@ FindMarkersCondition <- function(seurat,
       top_gene     <- rownames(res)[1]
       if (!is.null(top_gene) && length(top_gene) > 0 && !is.na(top_gene)) {
         d               <- plotCounts(dds, gene = top_gene,
-                                      intgroup = "condition", returnData = TRUE)
+                                      intgroup = condition_ident, returnData = TRUE)
         exp_gene_logfc  <- res[top_gene, ]$log2FoldChange
         exp_gene_padj   <- res[top_gene, ]$padj
       } else {
@@ -420,7 +439,7 @@ FindMarkersCondition <- function(seurat,
         names_to = "key",
         values_to = "value"
       )
-      gg_counts$condition <- cluster_metadata[gg_counts$key, "condition"]
+      gg_counts$condition <- cluster_metadata[gg_counts$key, condition_ident]
 
       print(
         ggplot(gg_counts, aes(x = key, y = value, fill = condition)) +
@@ -434,9 +453,9 @@ FindMarkersCondition <- function(seurat,
 
       # PCA by condition
       print(
-        DESeq2::plotPCA(vst, intgroup = "condition") +
+        DESeq2::plotPCA(vst, intgroup = condition_ident) +
           theme_classic() +
-          ggtitle(paste("Cluster", cluster, "- PCA by condition"))
+          ggtitle(paste("Cluster", cluster, "- PCA by", condition_ident))
       )
 
       # PCA by sample
@@ -478,7 +497,7 @@ FindMarkersCondition <- function(seurat,
       # Top gene expression
       if (!is.null(d)) {
         print(
-          ggplot(d, aes(x = condition, y = count, color = condition)) +
+          ggplot(d, aes(x = !!sym(condition_ident), y = count, color = !!sym(condition_ident))) +
             geom_point(position = position_jitter(w = 0.1, h = 0), size = 3) +
             theme_classic() +
             labs(

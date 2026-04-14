@@ -34,7 +34,7 @@ Runs pseudobulk DE per cluster between two conditions.
 - positive `log2FC` means higher expression in `conditions[1]`.
 - supports `batch_var`, `covariates`, and custom `design_formula`.
 - use `test_type = "LRT"` for likelihood ratio tests or `test_type = "Wald"` for Wald tests.
-- with `test_type = "LRT"`, the function uses a reduced model automatically when no custom design is provided.
+- with `test_type = "LRT"`, the function uses a reduced model automatically when no custom design is provided. The reduced design will be the full design without condition_ident. If conditions == NULL (default) test will be run including all levels of condition_ident. Otherwise data will be subset to the 2 specified levels of condition_ident.
 
 ### `FindMarkers()`
 Compares two groups of cells defined by a metadata identity.
