@@ -1,21 +1,119 @@
 # CVRCFunc
-To install run `devtools::install_github('mgildea87/CVRCFunc')`
-This is a simple package that will include R functions I think will be useful for others in the CVRC. The idea is to have them in a centralized location so we can all use them.
 
-## FindMarkersBulk()
-This function performs a similar task to Seurat's FindAllMarkers() but does so by pseudobulking by sample and then performing DESeq2. For each cluster, counts from cells are pseudobulked from the cluster of interest and from all other clusters. This generates 2 pseudobulks for each sample for each cluster. The cluster of interest pseudobulks are then compared to pseudobulks from all other clusters using DESeq2.
+CVRCFunc is a lightweight R package for CVRC single-cell analysis helpers. It contains pseudobulk differential expression wrappers, clustering sweep utilities, and plotting helpers built around `Seurat`, `DESeq2`, and `ggplot2`.
 
-## FindMarkersCondition()
-This function performs psuedobulked differential expression analysis for each cluster (or other identity specified) between samples from 2 specified conditions.
+## Installation
 
-## FindMarkers()
-This function performes pseudobulked differential expression analysis between 2 groups of cells specified via 'group_1' and 'group_2' for a given meta data identity specified with cluster_ident. Sample identity for pseudobulking is supplied via 'sample_ident'.
+Install from GitHub:
 
-## StackedVlnPlot()
-Creates a stacked violin plot from a Seurat object and a vector of gene/feature names.
+```r
+if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
+devtools::install_github("mgildea87/CVRCFunc")
+```
 
-## FindClusterSweep()
-Runs seurat's FindClusters accross a range of resolutions and outputs common clustering QC metric plots for each.
+Install locally from source:
 
-## BetterVlnPlot()
-Generates a violin plot with pleasing aestetics from a Seurat object and a vector of gene/feature names.
+```r
+devtools::install_local("/path/to/CVRCFunc")
+```
+
+## Main functions
+
+### `FindMarkersBulk()`
+Performs pseudobulk differential expression for every cluster using sample-level aggregation and `DESeq2`.
+- `seurat`: a `Seurat` object.
+- `clus_ident`: cluster identity column in `seurat@meta.data`.
+- `sample_ident`: sample identifier column used for pseudobulking.
+- optional `batch_var`, `covariates`, or custom `design_formula`.
+- outputs CSV and PDF QC files into `out_dir`.
+
+### `FindMarkersCondition()`
+Runs pseudobulk DE per cluster between two conditions.
+- `condition_ident`: metadata column defining condition labels.
+- `conditions`: a length-two vector of condition values, e.g. `c("treated", "control")`.
+- positive `log2FC` means higher expression in `conditions[1]`.
+- supports `batch_var`, `covariates`, and custom `design_formula`.
+
+### `FindMarkers()`
+Compares two groups of cells defined by a metadata identity.
+- `group_1` and `group_2` are values from `clus_ident`.
+- `sample_ident` controls pseudobulk aggregation.
+- useful for pairwise cluster/group comparisons.
+
+### `FindClusterSweep()`
+Runs `Seurat::FindClusters()` across a vector of resolutions and generates cluster QC plots.
+- requires a neighbor graph already computed (run `FindNeighbors()` first).
+- returns the input `Seurat` object with new clustering columns.
+- generates a PDF with cluster counts, silhouette plots, UMAP coloring, and modularity diagnostics.
+
+### `BetterVlnPlot()`
+Creates refined violin plots for feature expression from a `Seurat` object.
+- supports optional `condition_ident` to split by condition.
+- accepts `idents_to_plot`, `ncol`, `dot_size`, and `y_axis_title`.
+- returns a `ggplot2` object.
+
+## Example usage
+
+```r
+library(CVRCFunc)
+
+# Bulk cluster DE
+bulk_res <- FindMarkersBulk(
+  seurat = seu,
+  clus_ident = "seurat_clusters",
+  sample_ident = "sample_id",
+  batch_var = "batch",
+  covariates = c("age", "sex"),
+  out_dir = "FindMarkersBulk_output"
+)
+
+# Condition DE within clusters
+cond_res <- FindMarkersCondition(
+  seurat = seu,
+  clus_ident = "seurat_clusters",
+  sample_ident = "sample_id",
+  condition_ident = "condition",
+  conditions = c("treated", "control"),
+  out_dir = "FindMarkersCondition_output"
+)
+
+# Pairwise group comparison
+pair_res <- FindMarkers(
+  seurat = seu,
+  clus_ident = "seurat_clusters",
+  group_1 = "0",
+  group_2 = "1",
+  sample_ident = "sample_id",
+  batch_var = "batch",
+  out_dir = "FindMarkers_output"
+)
+
+# Cluster resolution sweep
+seu <- FindClusterSweep(
+  seurat = seu,
+  assay = "RNA",
+  resolutions = c(0.2, 0.4, 0.6, 0.8),
+  algorithm = 1,
+  reduction = "pca",
+  plot_reduction = "umap",
+  file_name = "cluster_sweep"
+)
+
+# Better violin plot
+p <- BetterVlnPlot(
+  seurat = seu,
+  clus_ident = "seurat_clusters",
+  features = c("CD3D", "GNLY"),
+  assay = "RNA",
+  condition_ident = "treatment",
+  ncol = 2,
+  dot_size = 0.5
+)
+print(p)
+```
+
+## Notes
+
+- Requires `Seurat`, `DESeq2`, `ggplot2`, `pheatmap`, `tidyr`, `ggbeeswarm`, and related packages.
+- `FindClusterSweep()` assumes a neighbor graph already exists in the `Seurat` object.
+- Functions create output directories automatically when needed.
