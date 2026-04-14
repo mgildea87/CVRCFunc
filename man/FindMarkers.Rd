@@ -10,11 +10,16 @@ FindMarkers(
   group_1,
   group_2,
   sample_ident,
+  batch_var = NULL,
+  covariates = NULL,
+  design_formula = NULL,
   expfilt_counts = 1,
   expfilt_freq = 0.5,
   out_dir = "FindMarkers",
   alpha = 0.1,
-  assay = "RNA"
+  assay = "RNA",
+  test_type = "LRT",
+  contrast_level = NULL
 )
 }
 \arguments{

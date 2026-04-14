@@ -1,4 +1,5 @@
 #' @import Matrix
+#' @keywords internal
 aggregate.Matrix <- function (x, groupings = NULL, form = NULL, fun = "sum", ...)
 {
   if (!is(x, "Matrix"))
@@ -25,7 +26,8 @@ aggregate.Matrix <- function (x, groupings = NULL, form = NULL, fun = "sum", ...
   return(result)
 }
 
-
+#' @import Matrix
+#' @keywords internal
 dMcast <- function (data, formula, fun.aggregate = "sum", value.var = NULL, as.factors = FALSE, factor.nas = TRUE, drop.unused.levels = TRUE)
 {
   values <- 1
@@ -80,4 +82,88 @@ dMcast <- function (data, formula, fun.aggregate = "sum", value.var = NULL, as.f
     result <- aggregate.Matrix(result, data[, responses, drop = FALSE], fun = fun.aggregate)
   }
   return(result)
+}
+
+#' Compute pct_in and pct_out for arbitrary cell groups
+#'
+#' @param seurat Seurat object
+#' @param cells_in Character vector of cell barcodes defining the "in" group
+#' @param cells_out Character vector of cell barcodes defining the "out" group
+#' @param assay Assay name to use (default: "RNA")
+#' @param slot Slot with expression data (usually "data" or "counts")
+#' @param features Optional vector of features to restrict to (default: all)
+#'
+#' @return A data.frame with columns:
+#'   feature, pct_in, pct_out
+#'   where:
+#'     pct_in  = fraction of cells in cells_in with expr > 0
+#'     pct_out = fraction of cells in cells_out with expr > 0
+#'
+#' @keywords internal
+CalcPctInOutByCells <- function(seurat,
+                                cells_in,
+                                cells_out,
+                                assay   = "RNA",
+                                slot    = "counts",
+                                features = NULL) {
+  # Basic checks
+  if (!inherits(seurat, "Seurat")) {
+    stop("'seurat' must be a Seurat object")
+  }
+  if (!assay %in% names(seurat@assays)) {
+    stop(paste0("Assay '", assay, "' not found in Seurat object"))
+  }
+  valid_slots <- c("counts", "data", "scale.data")
+  if (!slot %in% valid_slots) {
+    stop("Slot '", slot, "' is not one of: ",
+         paste(valid_slots, collapse = ", "))
+  }
+
+  all_cells <- colnames(seurat)
+  cells_in  <- intersect(cells_in, all_cells)
+  cells_out <- intersect(cells_out, all_cells)
+
+  if (length(cells_in) == 0) {
+    stop("No valid cells found in 'cells_in'")
+  }
+  if (length(cells_out) == 0) {
+    stop("No valid cells found in 'cells_out'")
+  }
+
+  # Pull expression matrix
+  mat <- Seurat::GetAssayData(seurat, assay = assay, slot = slot)
+  #if (!is.matrix(mat)) {
+  #  mat <- as.matrix(mat)
+  #}
+
+  # Restrict to requested features if provided
+  if (!is.null(features)) {
+    features <- intersect(features, rownames(mat))
+    if (length(features) == 0) {
+      stop("None of the requested features found in assay '", assay, "'")
+    }
+    mat <- mat[features, , drop = FALSE]
+  }
+
+  # Subset matrix to in/out cells
+  mat_in  <- mat[, cells_in,  drop = FALSE]
+  mat_out <- mat[, cells_out, drop = FALSE]
+
+  # Handle degenerate cases
+  if (ncol(mat_in) == 0 || ncol(mat_out) == 0) {
+    warning("One of the groups has no cells; setting pct_in/out to NA.")
+    pct_in  <- rep(NA_real_, nrow(mat))
+    pct_out <- rep(NA_real_, nrow(mat))
+  } else {
+    pct_in  <- Matrix::rowMeans(mat_in  > 0)
+    pct_out <- Matrix::rowMeans(mat_out > 0)
+  }
+
+  data.frame(
+    feature = rownames(mat),
+    pct_in  = pct_in,
+    pct_out = pct_out,
+    row.names = NULL,
+    stringsAsFactors = FALSE
+  )
 }

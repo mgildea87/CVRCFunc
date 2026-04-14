@@ -11,17 +11,8 @@ This function performs psuedobulked differential expression analysis for each cl
 ## FindMarkers()
 This function performes pseudobulked differential expression analysis between 2 groups of cells specified via 'group_1' and 'group_2' for a given meta data identity specified with cluster_ident. Sample identity for pseudobulking is supplied via 'sample_ident'.
 
-## ExportSeuratMeta()
-This function exports seurat meta data for use in RNA velocity analysis. specifically, .csv files of reformatted sample/cell barcodes, cell by cluster mappings, cell by embedding coordinates, and color palette for plotting.
-
-## ExportSeurath5ad()
-Converts and saves a seurat object integrated assay as .h5ad. For use in RNA velocity analysis.
-
 ## StackedVlnPlot()
 Creates a stacked violin plot from a Seurat object and a vector of gene/feature names.
-
-## UpdateAnno()
-Updates metadata in a seurat object given a user supplied .csv file.
 
 ## FindClusterSweep()
 Runs seurat's FindClusters accross a range of resolutions and outputs common clustering QC metric plots for each.

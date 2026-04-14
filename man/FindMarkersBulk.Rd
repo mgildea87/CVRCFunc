@@ -8,13 +8,18 @@ FindMarkersBulk(
   seurat,
   clus_ident,
   sample_ident,
+  batch_var = NULL,
+  covariates = NULL,
+  design_formula = NULL,
   expfilt_counts = 1,
   expfilt_freq = 0.5,
   n_top_genes = 50,
   pct.in = 25,
   out_dir = "FindMarkersBulk_outs",
   alpha = 0.1,
-  assay = "RNA"
+  assay = "RNA",
+  test_type = "LRT",
+  contrast_level = NULL
 )
 }
 \arguments{
@@ -24,22 +29,43 @@ FindMarkersBulk(
 
 \item{sample_ident}{Sample identities. Identity class that indicates how to partition samples}
 
-\item{expfilt_counts}{genes with less than \code{expfilt_counts} in \code{expfilt_freq * sample number} will be removed from DESeq2 mode. 1 by default.}
+\item{batch_var}{Optional batch variable in metadata}
 
-\item{expfilt_freq}{genes that have greater than \code{expfilt_counts} in greater than \code{expfilt_freq} fraction of cells will be kept for the DESeq2 model. 0.5 by default}
+\item{covariates}{Optional vector of additional covariate names in metadata}
+
+\item{design_formula}{Optional custom design formula. If NULL, will construct ~ iscluster + batch_var + covariates}
+
+\item{expfilt_counts}{genes with at least \code{expfilt_counts} in
+\code{expfilt_freq * n_samples} will be kept. Default: 1}
+
+\item{expfilt_freq}{fraction of samples that must pass \code{expfilt_counts} threshold. Default: 0.5}
 
 \item{n_top_genes}{number of top genes per cluster to save and make a heatmap with}
 
-\item{pct.in}{Filter threshold for top marker genes per cluster. For a given gene and cluster, if the fraction of cells with counts is less than pct.in it is removed from top_markers.}
+\item{pct.in}{Filter threshold for top marker genes per cluster.
+Interpreted as percent if > 1 (e.g. 25 means 25\%). If <= 1, treated as fraction. Default: 25. Output is a fraction.}
 
 \item{out_dir}{Name of output directory}
 
-\item{alpha}{FDR adjusted p-value threshold for significance in plotting. 0.1 by default.}
+\item{alpha}{FDR adjusted p-value threshold for significance in plotting. Default: 0.1}
 
-\item{assay}{Which assay to use. RNA by default. I added this parameter to enable use of ADT data when desired.}
+\item{assay}{Which assay to use. Default: 'RNA'}
+
+\item{test_type}{"LRT" (likelihood ratio test) or "Wald"}
+
+\item{contrast_level}{unused currently, reserved for future contrast control}
 }
 \value{
-.csv files with marker genes per \code{clus_ident}. .pdf files with plots
+Invisibly returns a list with:
+  \item{all_results}{A list of data.frames with DE results per cluster}
+  \item{top_markers}{Vector of unique top marker genes used in heatmap}
+  \item{design_formula}{The design formula used}
+  \item{reduced_formula}{Reduced formula used for LRT (if applicable)}
+  \item{params}{List of key parameters}
+
+Side effects:
+  - .csv files with marker genes per cluster
+  - .pdf files with QC plots and top marker heatmap
 }
 \description{
 Find all markers via pseudobulking and DESeq2
