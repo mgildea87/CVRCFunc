@@ -13,7 +13,7 @@ FindMarkersBulk(
   design_formula = NULL,
   expfilt_counts = 1,
   expfilt_freq = 0.5,
-  n_top_genes = 50,
+  n_top_genes = 15,
   pct.in = 25,
   out_dir = "FindMarkersBulk_outs",
   alpha = 0.1,
@@ -63,45 +63,10 @@ Invisibly returns a list with:
   \item{reduced_formula}{Reduced formula used for LRT (if applicable)}
   \item{params}{List of key parameters}
 
-Side effects:
+outputs:
   - .csv files with marker genes per cluster
   - .pdf files with QC plots and top marker heatmap
 }
 \description{
 Find all markers via pseudobulking and DESeq2
 }
-\examples{
-## LRT test for bulk markers
-bulk_res_lrt <- FindMarkersBulk(
-  seurat = seu,
-  clus_ident = "seurat_clusters",
-  sample_ident = "sample_id",
-  batch_var = "batch",
-  covariates = c("age", "sex"),
-  test_type = "LRT",
-  out_dir = "FindMarkersBulk_output_lrt"
-)
-
-## Wald test for bulk markers
-bulk_res_wald <- FindMarkersBulk(
-  seurat = seu,
-  clus_ident = "seurat_clusters",
-  sample_ident = "sample_id",
-  batch_var = "batch",
-  covariates = c("age", "sex"),
-  test_type = "Wald",
-  out_dir = "FindMarkersBulk_output_wald"
-)
-
-## Custom full design formula for LRT
-full_design <- ~ iscluster + batch + age + sex
-bulk_res_design <- FindMarkersBulk(
-  seurat = seu,
-  clus_ident = "seurat_clusters",
-  sample_ident = "sample_id",
-  design_formula = full_design,
-  test_type = "LRT",
-  out_dir = "FindMarkersBulk_output_design"
-)
-}
-

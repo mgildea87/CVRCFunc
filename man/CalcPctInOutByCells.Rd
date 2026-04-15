@@ -9,7 +9,7 @@ CalcPctInOutByCells(
   cells_in,
   cells_out,
   assay = "RNA",
-  slot = "data",
+  slot = "counts",
   features = NULL
 )
 }

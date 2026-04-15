@@ -3,7 +3,7 @@
 #' @param seurat A Seurat object
 #' @param clus_ident Identity for clusters. Normally 'seurat_clusters' but can be any identity
 #' @param sample_ident Sample identities. Identity class that indicates how to partition samples
-#' @param condition_ident Identity class for conditions to be tested
+#' @param condition_ident Identity class for conditions to be tested. This must be specified even if conditions == NULL. If using test_type = 'LRT' with conditions == NULL, the first 2 levels of condition_ident will be used for some plots and for calculation of % expression cells. condition_ident must be specified in design.
 #' @param conditions A vector of exactly 2 conditions within \code{condition_ident} to compare.
 #'        The first element is the numerator (positive log2FC = higher in conditions[1]).
 #'        If \code{NULL} and \code{test_type = "LRT"}, all levels of \code{condition_ident} are used.
@@ -20,7 +20,7 @@
 #' @param alpha FDR adjusted p-value threshold for significance in plotting. Default: 0.1
 #' @param assay Which assay to use. Default: 'RNA'
 #' @param test_type "LRT" (likelihood ratio test) or "Wald"
-#' @param contrast_level Unused currently, reserved for future contrast control
+#' @param save_DESeq_object Whether to save the DESeq2 object for each cluster. Default: FALSE
 #'
 #' @return Invisibly returns a list with:
 #'   \item{all_results}{A list of data.frames with DE results per cluster}
@@ -32,7 +32,7 @@
 #'   \item{params}{List of key parameters}
 #'
 #' outputs:
-#'   - .csv files with DE results per cluster
+#'   - .csv files with DE results per cluster. log2FC values are shrunken if test_type = "Wald" and both shrunken and raw are reported. If LRT, log2FC are from the full model without shrinkage.
 #'   - .pdf files with QC plots and top marker heatmap
 #'
 #' @import Seurat pheatmap DESeq2 ggplot2 ggrepel stringr utils grDevices grr
@@ -57,7 +57,7 @@ FindMarkersCondition <- function(seurat,
                                  alpha = 0.1,
                                  assay = "RNA",
                                  test_type = "LRT",
-                                 contrast_level = NULL) {
+                                 save_DESeq_object = FALSE) {
 
   start <- Sys.time()
   coef <- variable <- value <- NULL
@@ -355,11 +355,13 @@ FindMarkersCondition <- function(seurat,
         res <- results(dds, contrast = c(condition_ident, conditions[1], conditions[2]), alpha = alpha)
       }
 
-      message("Saving DESeq2 object for cluster ", cluster, "...")
-      saveRDS(
-        dds,
-        file = file.path(out_dir, paste0("cluster_", cluster, "_dds.rds"))
-      )
+      if(save_DESeq_object) {
+        message("Saving DESeq2 object for cluster ", cluster, "...")
+        saveRDS(
+          dds,
+          file = file.path(out_dir, paste0("cluster_", cluster, "_dds.rds"))
+        )
+      }
 
       message("Significant genes (padj < ", alpha, "): ",
               sum(res$padj < alpha, na.rm = TRUE))
