@@ -1,7 +1,7 @@
 Package: CVRCFunc
 Type: Package
 Title: Functions for CVRC Bioinformatics
-Version: 0.1.1
+Version: 1.0.0
 Author: Michael A Gildea
 Maintainer: Michael A Gildea <michael.gildea@n.org>
 Description: Functions for CVRC bioinformatics.
