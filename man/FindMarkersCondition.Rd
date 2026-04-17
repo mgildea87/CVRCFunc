@@ -9,12 +9,20 @@ FindMarkersCondition(
   clus_ident,
   sample_ident,
   condition_ident,
-  conditions,
+  conditions = NULL,
+  batch_var = NULL,
+  covariates = NULL,
+  design_formula = NULL,
+  reduced_formula = NULL,
   expfilt_counts = 1,
   expfilt_freq = 0.5,
+  n_top_genes = 15,
+  pct.in = 25,
   out_dir = "FindMarkersCondition_outs",
   alpha = 0.1,
-  assay = "RNA"
+  assay = "RNA",
+  test_type = "LRT",
+  save_DESeq_object = FALSE
 )
 }
 \arguments{
@@ -24,22 +32,52 @@ FindMarkersCondition(
 
 \item{sample_ident}{Sample identities. Identity class that indicates how to partition samples}
 
-\item{condition_ident}{Identity class for conditions to be tested}
+\item{condition_ident}{Identity class for conditions to be tested. This must be specified even if conditions == NULL. If using test_type = 'LRT' with conditions == NULL, the first 2 levels of condition_ident will be used for some plots and for calculation of percent expression cells. condition_ident must be specified in design.}
 
-\item{conditions}{A vector of the 2 conditions within \code{condition_ident} to be included in the DESeq2 model.}
+\item{conditions}{A vector of exactly 2 conditions within \code{condition_ident} to compare.
+The first element is the numerator (positive log2FC = higher in conditions[1]).
+If \code{NULL} and \code{test_type = "LRT"}, all levels of \code{condition_ident} are used.}
 
-\item{expfilt_counts}{genes with less than \code{expfilt_counts} in \code{expfilt_freq * sample number} will be removed from DESeq2 model. 1 by default.}
+\item{batch_var}{Optional batch variable in metadata}
 
-\item{expfilt_freq}{genes that have greater than \code{expfilt_counts} in greater than \code{expfilt_freq} fraction of cells will be kept for the DESeq2 model. 0.5 by default}
+\item{covariates}{Optional vector of additional covariate names in metadata}
+
+\item{design_formula}{Optional custom design formula. If NULL, will construct ~ condition_ident + batch_var + covariates. If providing a custom formula, all variables (except condition_ident) must be specified as batch_var or covariates to ensure they are included in the pseudobulk metadata.}
+
+\item{reduced_formula}{Optional custom reduced formula for LRT. If NULL, will construct by removing the condition_ident term from design_formula}
+
+\item{expfilt_counts}{Genes with at least \code{expfilt_counts} counts in
+\code{expfilt_freq * n_samples} samples will be kept. Default: 1}
+
+\item{expfilt_freq}{Fraction of samples that must pass \code{expfilt_counts} threshold. Default: 0.5}
+
+\item{n_top_genes}{Number of top genes per cluster to save and make a heatmap with}
+
+\item{pct.in}{Filter threshold for top marker genes. Interpreted as percent if > 1. Default: 25}
 
 \item{out_dir}{Name of output directory}
 
-\item{alpha}{FDR adjusted p-value threshold for significance in plotting. 0.1 by default.}
+\item{alpha}{FDR adjusted p-value threshold for significance in plotting. Default: 0.1}
 
-\item{assay}{Which assay to use. RNA by default. I added this parameter to enable use of ADT data when desired.}
+\item{assay}{Which assay to use. Default: 'RNA'}
+
+\item{test_type}{"LRT" (likelihood ratio test) or "Wald"}
+
+\item{save_DESeq_object}{Whether to save the DESeq2 object for each cluster. Default: FALSE}
 }
 \value{
-.csv files with marker genes per \code{clus_ident}. .pdf files with diagnostic plots
+Invisibly returns a list with:
+  \item{all_results}{A list of data.frames with DE results per cluster}
+  \item{summary}{Summary data.frame of significant genes per cluster}
+  \item{top_markers}{Vector of unique top marker genes used in heatmap}
+  \item{design_formula}{The design formula used}
+  \item{reduced_formula}{Reduced formula used for LRT (if applicable)}
+  \item{conditions}{The conditions compared}
+  \item{params}{List of key parameters}
+
+outputs:
+  - .csv files with DE results per cluster. log2FC values are shrunken if test_type = "Wald" and both shrunken and raw are reported. If LRT, log2FC are from the full model without shrinkage.
+  - .pdf files with QC plots and top marker heatmap
 }
 \description{
 Differential expression testing between conditions via pseudobulking and DESeq2

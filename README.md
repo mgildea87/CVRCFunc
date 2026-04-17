@@ -1,30 +1,129 @@
 # CVRCFunc
-To install run `devtools::install_github('mgildea87/CVRCFunc')`
-This is a simple package that will include R functions I think will be useful for others in the CVRC. The idea is to have them in a centralized location so we can all use them.
 
-## FindMarkersBulk()
-This function performs a similar task to Seurat's FindAllMarkers() but does so by pseudobulking by sample and then performing DESeq2. For each cluster, counts from cells are pseudobulked from the cluster of interest and from all other clusters. This generates 2 pseudobulks for each sample for each cluster. The cluster of interest pseudobulks are then compared to pseudobulks from all other clusters using DESeq2.
+CVRCFunc is a lightweight R package for CVRC single-cell analysis helpers. It contains pseudobulk differential expression wrappers and plotting helpers built around `Seurat`, `DESeq2`, and `ggplot2`.
 
-## FindMarkersCondition()
-This function performs psuedobulked differential expression analysis for each cluster (or other identity specified) between samples from 2 specified conditions.
+## Installation
 
-## FindMarkers()
-This function performes pseudobulked differential expression analysis between 2 groups of cells specified via 'group_1' and 'group_2' for a given meta data identity specified with cluster_ident. Sample identity for pseudobulking is supplied via 'sample_ident'.
+Install from GitHub:
 
-## ExportSeuratMeta()
-This function exports seurat meta data for use in RNA velocity analysis. specifically, .csv files of reformatted sample/cell barcodes, cell by cluster mappings, cell by embedding coordinates, and color palette for plotting.
+```r
+if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
+devtools::install_github("mgildea87/CVRCFunc")
+```
 
-## ExportSeurath5ad()
-Converts and saves a seurat object integrated assay as .h5ad. For use in RNA velocity analysis.
+Install locally from source:
 
-## StackedVlnPlot()
-Creates a stacked violin plot from a Seurat object and a vector of gene/feature names.
+```r
+devtools::install_local("/path/to/CVRCFunc")
+```
 
-## UpdateAnno()
-Updates metadata in a seurat object given a user supplied .csv file.
+## Main functions
 
-## FindClusterSweep()
-Runs seurat's FindClusters accross a range of resolutions and outputs common clustering QC metric plots for each.
+### `FindMarkersBulk()`
+Performs pseudobulk differential expression for every cluster using sample-level aggregation and `DESeq2`.
+- `seurat`: a `Seurat` object.
+- `clus_ident`: cluster identity column in `seurat@meta.data`.
+- `sample_ident`: sample identifier column used for pseudobulking.
+- optional `batch_var`, `covariates`, or custom `design_formula`.
+- outputs CSV and PDF QC files into `out_dir`.
 
-## BetterVlnPlot()
-Generates a violin plot with pleasing aestetics from a Seurat object and a vector of gene/feature names.
+### `FindMarkersCondition()`
+Runs pseudobulk DE per cluster between two conditions.
+- `condition_ident`: metadata column defining condition labels.
+- `conditions`: a length-two vector of condition values, e.g. `c("treated", "control")`.
+- positive `log2FC` means higher expression in `conditions[1]`.
+- supports `batch_var`, `covariates`, and custom `design_formula`.
+- use `test_type = "LRT"` for likelihood ratio tests or `test_type = "Wald"` for Wald tests.
+- with `test_type = "LRT"`, the function uses a reduced model automatically when no custom design is provided. The reduced design will be the full design without condition_ident. If conditions == NULL (default) test will be run including all levels of condition_ident. Otherwise data will be subset to the 2 specified levels of condition_ident.
+
+### `FindMarkers()`
+Compares two groups of cells defined by a metadata identity.
+- `group_1` and `group_2` are values from `clus_ident`.
+- `sample_ident` controls pseudobulk aggregation.
+- useful for pairwise cluster/group comparisons.
+
+### `BetterVlnPlot()`
+Creates refined violin plots for feature expression from a `Seurat` object.
+- supports optional `condition_ident` to split by condition.
+- accepts `idents_to_plot`, `ncol`, `dot_size`, and `y_axis_title`.
+- returns a `ggplot2` object.
+
+## Example usage
+
+```r
+library(CVRCFunc)
+
+# Bulk cluster DE
+bulk_res <- FindMarkersBulk(
+	seurat = seu,
+	clus_ident = "seurat_clusters",
+	sample_ident = "sample_id",
+	batch_var = "batch",
+	covariates = c("age", "sex"),
+	out_dir = "FindMarkersBulk_output"
+)
+
+# Condition DE within clusters (LRT)
+cond_res <- FindMarkersCondition(
+	seurat = seu,
+	clus_ident = "seurat_clusters",
+	sample_ident = "sample_id",
+	condition_ident = "condition",
+	conditions = c("treated", "control"),
+	out_dir = "FindMarkersCondition_output",
+	test_type = "LRT"
+)
+
+# Condition DE within clusters (Wald)
+cond_res_wald <- FindMarkersCondition(
+	seurat = seu,
+	clus_ident = "seurat_clusters",
+	sample_ident = "sample_id",
+	condition_ident = "condition",
+	conditions = c("treated", "control"),
+	out_dir = "FindMarkersCondition_output_wald",
+	test_type = "Wald"
+)
+
+# Condition DE with custom full and reduced designs
+full_design <- ~ condition + batch + age + sex
+reduced_design <- ~ batch + age + sex
+cond_res_design <- FindMarkersCondition(
+	seurat = seu,
+	clus_ident = "seurat_clusters",
+	sample_ident = "sample_id",
+	condition_ident = "condition",
+	conditions = c("treated", "control"),
+	design_formula = full_design,
+	out_dir = "FindMarkersCondition_output_design",
+	test_type = "LRT"
+)
+
+# Pairwise group comparison
+pair_res <- FindMarkers(
+	seurat = seu,
+	clus_ident = "seurat_clusters",
+	group_1 = "0",
+	group_2 = "1",
+	sample_ident = "sample_id",
+	batch_var = "batch",
+	out_dir = "FindMarkers_output"
+)
+
+# Better violin plot
+p <- BetterVlnPlot(
+	seurat = seu,
+	clus_ident = "seurat_clusters",
+	features = c("CD3D", "GNLY"),
+	assay = "RNA",
+	condition_ident = "treatment",
+	ncol = 2,
+	dot_size = 0.5
+)
+print(p)
+```
+
+## Notes
+
+- Requires `Seurat`, `DESeq2`, `ggplot2`, `pheatmap`, `tidyr`, `ggbeeswarm`, and related packages.
+- Functions create output directories automatically when needed.

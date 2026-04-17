@@ -9,10 +9,21 @@
 #' @param ncol number of columns if plotting multiple genes
 #' @param dot_size size of dots. Set to NA to remove dots
 #' @param y_axis_title y-axis label. Default is 'log normalized counts'
-#' @import Seurat ggplot2 dplyr reshape2 ggbeeswarm
+#' @import Seurat ggplot2 dplyr ggbeeswarm
+#' @importFrom tidyr pivot_longer
 #' @export
 
 BetterVlnPlot <- function(seurat, clus_ident = 'seurat_clusters', condition_ident = vector(), features, assay = 'RNA', idents_to_plot = vector(), ncol = 1, dot_size = 1, y_axis_title = 'log normalized counts'){
+
+  assay_data <- tryCatch(
+    Seurat::GetAssayData(seurat, assay = assay, layer = 'data'),
+    error = function(...) Seurat::GetAssayData(seurat, assay = assay, slot = 'data')
+  )
+  features_present <- row.names(assay_data) %in% features
+
+  if (!any(features_present)) {
+    stop('None of the requested features were found in the assay data')
+  }
 
   if(length(idents_to_plot) == 0){
     idents <- unique(pull(seurat@meta.data, clus_ident))
@@ -21,10 +32,10 @@ BetterVlnPlot <- function(seurat, clus_ident = 'seurat_clusters', condition_iden
 
   if(length(condition_ident) == 0){
     meta_sub <- seurat@meta.data[which(pull(seurat@meta.data, clus_ident) %in% idents),c(clus_ident), drop=F]
-    exp <- seurat@assays[[assay]]@data[which(row.names(seurat@assays[[assay]]@data) %in% features),row.names(meta_sub)]
+    exp <- assay_data[features_present, row.names(meta_sub), drop = FALSE]
     meta_sub <- cbind(meta_sub, t(exp))
     row.names(meta_sub) <- NULL
-    meta_sub <- melt(meta_sub)
+    meta_sub <- tidyr::pivot_longer(meta_sub, cols = -all_of(clus_ident), names_to = "variable", values_to = "value")
     meta_sub_wo0 <- meta_sub
     meta_sub_wo0$value[which(meta_sub_wo0$value == 0)] <- NA
     if(dot_size == 0){
@@ -47,10 +58,10 @@ BetterVlnPlot <- function(seurat, clus_ident = 'seurat_clusters', condition_iden
     }
   }else{
     meta_sub <- seurat@meta.data[which(pull(seurat@meta.data, clus_ident) %in% idents),c(clus_ident, condition_ident)]
-    exp <- seurat@assays[[assay]]@data[which(row.names(seurat@assays[[assay]]@data) %in% features),row.names(meta_sub)]
+    exp <- assay_data[features_present, row.names(meta_sub), drop = FALSE]
     meta_sub <- cbind(meta_sub, t(exp))
     row.names(meta_sub) <- NULL
-    meta_sub <- melt(meta_sub)
+    meta_sub <- tidyr::pivot_longer(meta_sub, cols = -all_of(c(clus_ident, condition_ident)), names_to = "variable", values_to = "value")
     meta_sub_wo0 <- meta_sub
     meta_sub_wo0$value[which(meta_sub_wo0$value == 0)] <- NA
     if(dot_size == 0){
