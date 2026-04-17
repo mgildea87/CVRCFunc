@@ -32,7 +32,7 @@ FindMarkersCondition(
 
 \item{sample_ident}{Sample identities. Identity class that indicates how to partition samples}
 
-\item{condition_ident}{Identity class for conditions to be tested. This must be specified even if conditions == NULL. If using test_type = 'LRT' with conditions == NULL, the first 2 levels of condition_ident will be used for some plots and for calculation of % expression cells. condition_ident must be specified in design.}
+\item{condition_ident}{Identity class for conditions to be tested. This must be specified even if conditions == NULL. If using test_type = 'LRT' with conditions == NULL, the first 2 levels of condition_ident will be used for some plots and for calculation of percent expression cells. condition_ident must be specified in design.}
 
 \item{conditions}{A vector of exactly 2 conditions within \code{condition_ident} to compare.
 The first element is the numerator (positive log2FC = higher in conditions[1]).

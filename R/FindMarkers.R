@@ -34,6 +34,11 @@ FindMarkers <- function(seurat,
 
   start <- Sys.time()
   coef <- variable <- value <- NULL
+  output_name <- paste(group_1, "vs", group_2)
+  counts_mat <- tryCatch(
+    Seurat::GetAssayData(seurat, assay = assay, layer = "counts"),
+    error = function(...) Seurat::GetAssayData(seurat, assay = assay, slot = "counts")
+  )
 
   # Create output directory
   dir.create(out_dir, showWarnings = FALSE)
@@ -77,7 +82,9 @@ FindMarkers <- function(seurat,
       stop(paste("Covariates not found in metadata:", paste(missing_covs, collapse = ", ")))
     }
   }
-
+  if('layers' %in% slotNames(seurat[[assay]]) && length(grep(SeuratObject::Layers(seurat[[assay]]), pattern = '^counts')) > 1) {
+    stop("Seurat object has split layers. Please join layers before running FindMarkers.")
+  }
   # Set identities and subset
   Idents(seurat) <- clus_ident
   seurat <- subset(seurat, idents = c(group_1, group_2))
@@ -137,23 +144,27 @@ FindMarkers <- function(seurat,
 
   # Print out the table of cells in each cluster-sample group
   pdf(paste(out_dir, '/', group_1, "_", group_2, "_", 'cells_per_group_HM.pdf', sep = ''))
-  pheatmap(table(seurat@meta.data[, clus_ident], seurat@meta.data[, sample_ident]),
-           display_numbers = TRUE,
-           cluster_rows = FALSE,
-           cluster_cols = FALSE,
-           fontsize_number = 8,
-           main = paste("Cells per group and sample\n", group_1, "vs", group_2))
+  safe_pheatmap(
+    table(seurat@meta.data[, clus_ident], seurat@meta.data[, sample_ident]),
+    display_numbers = TRUE,
+    cluster_rows = FALSE,
+    cluster_cols = FALSE,
+    fontsize_number = 8,
+    main = paste("Cells per group and sample\n", group_1, "vs", group_2)
+  )
   dev.off()
 
   # If batch variable provided, show batch distribution
   if (!is.null(batch_var)) {
     pdf(paste(out_dir, '/', group_1, "_", group_2, "_", 'cells_per_batch_HM.pdf', sep = ''))
-    pheatmap(table(seurat@meta.data[, clus_ident], seurat@meta.data[, batch_var]),
-             display_numbers = TRUE,
-             cluster_rows = FALSE,
-             cluster_cols = FALSE,
-             fontsize_number = 8,
-             main = paste("Cells per group and batch\n", group_1, "vs", group_2))
+    safe_pheatmap(
+      table(seurat@meta.data[, clus_ident], seurat@meta.data[, batch_var]),
+      display_numbers = TRUE,
+      cluster_rows = FALSE,
+      cluster_cols = FALSE,
+      fontsize_number = 8,
+      main = paste("Cells per group and batch\n", group_1, "vs", group_2)
+    )
     dev.off()
   }
 
@@ -164,16 +175,12 @@ FindMarkers <- function(seurat,
 
   # Pseudobulk aggregation
   cat("Aggregating to pseudobulk...\n")
-  if (length(grep(seurat@version, pattern = '^4.')) == 1) {
-    pb <- aggregate.Matrix(t(seurat@assays$RNA@counts),
-                           groupings = seurat$cluster_sample,
-                           fun = "sum")
-  } else if (length(grep(seurat@version, pattern = '^5.')) == 1) {
-    pb <- aggregate.Matrix(t(seurat@assays[[assay]]@layers$counts),
-                           groupings = seurat$cluster_sample,
-                           fun = "sum")
-    colnames(pb) <- row.names(seurat@assays[[assay]])
-  }
+  pb <- aggregate.Matrix(
+    t(counts_mat),
+    groupings = data.frame(cluster_sample = seurat$cluster_sample),
+    fun = "sum"
+  )
+  colnames(pb) <- rownames(counts_mat)
 
   # Create cluster counts matrix
   cluster_counts <- as.data.frame(t(as.matrix(pb)))

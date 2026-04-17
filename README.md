@@ -1,6 +1,6 @@
 # CVRCFunc
 
-CVRCFunc is a lightweight R package for CVRC single-cell analysis helpers. It contains pseudobulk differential expression wrappers, clustering sweep utilities, and plotting helpers built around `Seurat`, `DESeq2`, and `ggplot2`.
+CVRCFunc is a lightweight R package for CVRC single-cell analysis helpers. It contains pseudobulk differential expression wrappers and plotting helpers built around `Seurat`, `DESeq2`, and `ggplot2`.
 
 ## Installation
 
@@ -42,12 +42,6 @@ Compares two groups of cells defined by a metadata identity.
 - `sample_ident` controls pseudobulk aggregation.
 - useful for pairwise cluster/group comparisons.
 
-### `FindClusterSweep()`
-Runs `Seurat::FindClusters()` across a vector of resolutions and generates cluster QC plots.
-- requires a neighbor graph already computed (run `FindNeighbors()` first).
-- returns the input `Seurat` object with new clustering columns.
-- generates a PDF with cluster counts, silhouette plots, UMAP coloring, and modularity diagnostics.
-
 ### `BetterVlnPlot()`
 Creates refined violin plots for feature expression from a `Seurat` object.
 - supports optional `condition_ident` to split by condition.
@@ -61,81 +55,70 @@ library(CVRCFunc)
 
 # Bulk cluster DE
 bulk_res <- FindMarkersBulk(
-  seurat = seu,
-  clus_ident = "seurat_clusters",
-  sample_ident = "sample_id",
-  batch_var = "batch",
-  covariates = c("age", "sex"),
-  out_dir = "FindMarkersBulk_output"
+	seurat = seu,
+	clus_ident = "seurat_clusters",
+	sample_ident = "sample_id",
+	batch_var = "batch",
+	covariates = c("age", "sex"),
+	out_dir = "FindMarkersBulk_output"
 )
 
 # Condition DE within clusters (LRT)
 cond_res <- FindMarkersCondition(
-  seurat = seu,
-  clus_ident = "seurat_clusters",
-  sample_ident = "sample_id",
-  condition_ident = "condition",
-  conditions = c("treated", "control"),
-  out_dir = "FindMarkersCondition_output",
-  test_type = "LRT"
+	seurat = seu,
+	clus_ident = "seurat_clusters",
+	sample_ident = "sample_id",
+	condition_ident = "condition",
+	conditions = c("treated", "control"),
+	out_dir = "FindMarkersCondition_output",
+	test_type = "LRT"
 )
 
 # Condition DE within clusters (Wald)
 cond_res_wald <- FindMarkersCondition(
-  seurat = seu,
-  clus_ident = "seurat_clusters",
-  sample_ident = "sample_id",
-  condition_ident = "condition",
-  conditions = c("treated", "control"),
-  out_dir = "FindMarkersCondition_output_wald",
-  test_type = "Wald"
+	seurat = seu,
+	clus_ident = "seurat_clusters",
+	sample_ident = "sample_id",
+	condition_ident = "condition",
+	conditions = c("treated", "control"),
+	out_dir = "FindMarkersCondition_output_wald",
+	test_type = "Wald"
 )
 
 # Condition DE with custom full and reduced designs
 full_design <- ~ condition + batch + age + sex
 reduced_design <- ~ batch + age + sex
 cond_res_design <- FindMarkersCondition(
-  seurat = seu,
-  clus_ident = "seurat_clusters",
-  sample_ident = "sample_id",
-  condition_ident = "condition",
-  conditions = c("treated", "control"),
-  design_formula = full_design,
-  out_dir = "FindMarkersCondition_output_design",
-  test_type = "LRT"
+	seurat = seu,
+	clus_ident = "seurat_clusters",
+	sample_ident = "sample_id",
+	condition_ident = "condition",
+	conditions = c("treated", "control"),
+	design_formula = full_design,
+	out_dir = "FindMarkersCondition_output_design",
+	test_type = "LRT"
 )
 
 # Pairwise group comparison
 pair_res <- FindMarkers(
-  seurat = seu,
-  clus_ident = "seurat_clusters",
-  group_1 = "0",
-  group_2 = "1",
-  sample_ident = "sample_id",
-  batch_var = "batch",
-  out_dir = "FindMarkers_output"
-)
-
-# Cluster resolution sweep
-seu <- FindClusterSweep(
-  seurat = seu,
-  assay = "RNA",
-  resolutions = c(0.2, 0.4, 0.6, 0.8),
-  algorithm = 1,
-  reduction = "pca",
-  plot_reduction = "umap",
-  file_name = "cluster_sweep"
+	seurat = seu,
+	clus_ident = "seurat_clusters",
+	group_1 = "0",
+	group_2 = "1",
+	sample_ident = "sample_id",
+	batch_var = "batch",
+	out_dir = "FindMarkers_output"
 )
 
 # Better violin plot
 p <- BetterVlnPlot(
-  seurat = seu,
-  clus_ident = "seurat_clusters",
-  features = c("CD3D", "GNLY"),
-  assay = "RNA",
-  condition_ident = "treatment",
-  ncol = 2,
-  dot_size = 0.5
+	seurat = seu,
+	clus_ident = "seurat_clusters",
+	features = c("CD3D", "GNLY"),
+	assay = "RNA",
+	condition_ident = "treatment",
+	ncol = 2,
+	dot_size = 0.5
 )
 print(p)
 ```
@@ -143,5 +126,4 @@ print(p)
 ## Notes
 
 - Requires `Seurat`, `DESeq2`, `ggplot2`, `pheatmap`, `tidyr`, `ggbeeswarm`, and related packages.
-- `FindClusterSweep()` assumes a neighbor graph already exists in the `Seurat` object.
 - Functions create output directories automatically when needed.

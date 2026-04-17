@@ -29,7 +29,7 @@
 #'   - .csv files with marker genes per cluster
 #'   - .pdf files with QC plots and top marker heatmap
 #'
-#' @import Seurat pheatmap DESeq2 ggplot2 ggrepel stringr utils grDevices grr
+#' @import Seurat pheatmap DESeq2 ggplot2 ggrepel stringr utils grDevices
 #' @importFrom BiocGenerics t
 #' @importFrom tidyr pivot_longer
 #' @export
@@ -70,7 +70,9 @@ FindMarkersBulk <- function(seurat,
   if (!test_type %in% c("LRT", "Wald")) {
     stop("test_type must be one of 'LRT' or 'Wald'")
   }
-
+  if('layers' %in% slotNames(seurat[[assay]]) && length(grep(SeuratObject::Layers(seurat[[assay]]), pattern = '^counts')) > 1) {
+    stop("Seurat object has split layers. Please join layers before running FindMarkersBulk.")
+  }
   # Validate batch_var & covariates
   if (!is.null(batch_var) && !batch_var %in% colnames(seurat@meta.data)) {
     stop(paste("batch_var", batch_var, "not found in seurat metadata"))
@@ -155,22 +157,26 @@ FindMarkersBulk <- function(seurat,
   ## 2. QC heatmaps of cell numbers
   ## ---------------------------
   pdf(file.path(out_dir, "cells_per_clus_HM.pdf"))
-  pheatmap(table(seurat@meta.data[, clus_ident], seurat@meta.data[, sample_ident]),
-           display_numbers = TRUE,
-           cluster_rows = FALSE,
-           cluster_cols = FALSE,
-           fontsize_number = 4,
-           main = "Cells per cluster and sample")
+  safe_pheatmap(
+    table(seurat@meta.data[, clus_ident], seurat@meta.data[, sample_ident]),
+    display_numbers = TRUE,
+    cluster_rows = FALSE,
+    cluster_cols = FALSE,
+    fontsize_number = 4,
+    main = "Cells per cluster and sample"
+  )
   dev.off()
 
   if (!is.null(batch_var)) {
     pdf(file.path(out_dir, "cells_per_batch_HM.pdf"))
-    pheatmap(table(seurat@meta.data[, clus_ident], seurat@meta.data[, batch_var]),
-             display_numbers = TRUE,
-             cluster_rows = FALSE,
-             cluster_cols = FALSE,
-             fontsize_number = 4,
-             main = "Cells per cluster and batch")
+    safe_pheatmap(
+      table(seurat@meta.data[, clus_ident], seurat@meta.data[, batch_var]),
+      display_numbers = TRUE,
+      cluster_rows = FALSE,
+      cluster_cols = FALSE,
+      fontsize_number = 4,
+      main = "Cells per cluster and batch"
+    )
     dev.off()
   }
 
@@ -195,7 +201,7 @@ FindMarkersBulk <- function(seurat,
 
       ## 5.2 Pseudobulk aggregation (version-agnostic)
       message("Aggregating counts to pseudobulk...")
-      counts_mat <- GetAssayData(seurat, assay = assay, slot = "counts")
+      counts_mat <- get_assay_data_compat(seurat, assay = assay, slot = "counts")
       #if (!is.matrix(counts_mat)) {
       #  counts_mat <- as.matrix(counts_mat)
       #}

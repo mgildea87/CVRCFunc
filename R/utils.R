@@ -1,9 +1,8 @@
-#' @import Matrix
 #' @keywords internal
 aggregate.Matrix <- function (x, groupings = NULL, form = NULL, fun = "sum", ...)
 {
   if (!is(x, "Matrix"))
-    x <- Matrix(as.matrix(x), sparse = TRUE)
+    x <- Matrix::Matrix(as.matrix(x), sparse = TRUE)
   if (fun == "count")
     x <- x != 0
   groupings2 <- groupings
@@ -26,7 +25,6 @@ aggregate.Matrix <- function (x, groupings = NULL, form = NULL, fun = "sum", ...
   return(result)
 }
 
-#' @import Matrix
 #' @keywords internal
 dMcast <- function (data, formula, fun.aggregate = "sum", value.var = NULL, as.factors = FALSE, factor.nas = TRUE, drop.unused.levels = TRUE)
 {
@@ -84,6 +82,15 @@ dMcast <- function (data, formula, fun.aggregate = "sum", value.var = NULL, as.f
   return(result)
 }
 
+#' Compatibility wrapper for Seurat assay data access
+#' @keywords internal
+get_assay_data_compat <- function(seurat, assay, slot) {
+  tryCatch(
+    Seurat::GetAssayData(seurat, assay = assay, layer = slot),
+    error = function(...) Seurat::GetAssayData(seurat, assay = assay, slot = slot)
+  )
+}
+
 #' Compute pct_in and pct_out for arbitrary cell groups
 #'
 #' @param seurat Seurat object
@@ -131,7 +138,7 @@ CalcPctInOutByCells <- function(seurat,
   }
 
   # Pull expression matrix
-  mat <- Seurat::GetAssayData(seurat, assay = assay, slot = slot)
+  mat <- get_assay_data_compat(seurat, assay = assay, slot = slot)
   #if (!is.matrix(mat)) {
   #  mat <- as.matrix(mat)
   #}
@@ -166,4 +173,18 @@ CalcPctInOutByCells <- function(seurat,
     row.names = NULL,
     stringsAsFactors = FALSE
   )
+}
+
+#' Plot heatmaps safely when input values are constant
+#' @keywords internal
+safe_pheatmap <- function(mat, ...) {
+  values <- unique(as.numeric(mat))
+
+  if (length(values) <= 1 && length(values) > 0 && !is.na(values[1])) {
+    center <- values[1]
+    breaks <- seq(center - 0.5, center + 0.5, length.out = 101)
+    return(pheatmap::pheatmap(mat, breaks = breaks, ...))
+  }
+
+  pheatmap::pheatmap(mat, ...)
 }

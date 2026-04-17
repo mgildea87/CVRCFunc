@@ -1,6 +1,6 @@
 Package: CVRCFunc
 Type: Package
-Title: Functions for CVRC bioinformatics
+Title: Functions for CVRC Bioinformatics
 Version: 0.1.0
 Author: Michael A Gildea
 Maintainer: Michael A Gildea <michael.gildea@n.org>
@@ -21,18 +21,13 @@ Imports:
     dplyr,
     tidyr,
     stats,
-    patchwork,
-    bluster,
-    ggraph,
-    cluster,
-    clustree,
     ggbeeswarm,
-    igraph,
     purrr,
-    reticulate,
     Matrix,
     grr
 Encoding: UTF-8
-License: X
+License: GPL-3
 LazyData: true
 RoxygenNote: 7.3.2
+Suggests: 
+    testthat (>= 3.0.0)

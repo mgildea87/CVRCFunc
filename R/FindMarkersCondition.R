@@ -3,7 +3,7 @@
 #' @param seurat A Seurat object
 #' @param clus_ident Identity for clusters. Normally 'seurat_clusters' but can be any identity
 #' @param sample_ident Sample identities. Identity class that indicates how to partition samples
-#' @param condition_ident Identity class for conditions to be tested. This must be specified even if conditions == NULL. If using test_type = 'LRT' with conditions == NULL, the first 2 levels of condition_ident will be used for some plots and for calculation of % expression cells. condition_ident must be specified in design.
+#' @param condition_ident Identity class for conditions to be tested. This must be specified even if conditions == NULL. If using test_type = 'LRT' with conditions == NULL, the first 2 levels of condition_ident will be used for some plots and for calculation of percent expression cells. condition_ident must be specified in design.
 #' @param conditions A vector of exactly 2 conditions within \code{condition_ident} to compare.
 #'        The first element is the numerator (positive log2FC = higher in conditions[1]).
 #'        If \code{NULL} and \code{test_type = "LRT"}, all levels of \code{condition_ident} are used.
@@ -35,7 +35,7 @@
 #'   - .csv files with DE results per cluster. log2FC values are shrunken if test_type = "Wald" and both shrunken and raw are reported. If LRT, log2FC are from the full model without shrinkage.
 #'   - .pdf files with QC plots and top marker heatmap
 #'
-#' @import Seurat pheatmap DESeq2 ggplot2 ggrepel stringr utils grDevices grr
+#' @import Seurat pheatmap DESeq2 ggplot2 ggrepel stringr utils grDevices
 #' @importFrom BiocGenerics t
 #' @importFrom tidyr pivot_longer
 #' @export
@@ -82,6 +82,9 @@ FindMarkersCondition <- function(seurat,
   }
   if (!test_type %in% c("LRT", "Wald")) {
     stop("test_type must be one of 'LRT' or 'Wald'")
+  }
+  if('layers' %in% slotNames(seurat[[assay]]) && length(grep(SeuratObject::Layers(seurat[[assay]]), pattern = '^counts')) > 1) {
+    stop("Seurat object has split layers. Please join layers before running FindMarkersCondition.")
   }
   # Handle conditions
   if (test_type == "LRT" && is.null(conditions)) {
@@ -205,22 +208,26 @@ FindMarkersCondition <- function(seurat,
   ## 3. QC heatmaps of cell numbers
   ## ---------------------------
   pdf(file.path(out_dir, "cells_per_clus_HM.pdf"))
-  pheatmap(table(seurat@meta.data[, clus_ident], seurat@meta.data[, sample_ident]),
-           display_numbers = TRUE,
-           cluster_rows    = FALSE,
-           cluster_cols    = FALSE,
-           fontsize_number = 4,
-           main            = "Cells per cluster and sample")
+  safe_pheatmap(
+    table(seurat@meta.data[, clus_ident], seurat@meta.data[, sample_ident]),
+    display_numbers = TRUE,
+    cluster_rows    = FALSE,
+    cluster_cols    = FALSE,
+    fontsize_number = 4,
+    main            = "Cells per cluster and sample"
+  )
   dev.off()
 
   if (!is.null(batch_var)) {
     pdf(file.path(out_dir, "cells_per_batch_HM.pdf"))
-    pheatmap(table(seurat@meta.data[, clus_ident], seurat@meta.data[, batch_var]),
-             display_numbers = TRUE,
-             cluster_rows    = FALSE,
-             cluster_cols    = FALSE,
-             fontsize_number = 4,
-             main            = "Cells per cluster and batch")
+    safe_pheatmap(
+      table(seurat@meta.data[, clus_ident], seurat@meta.data[, batch_var]),
+      display_numbers = TRUE,
+      cluster_rows    = FALSE,
+      cluster_cols    = FALSE,
+      fontsize_number = 4,
+      main            = "Cells per cluster and batch"
+    )
     dev.off()
   }
 
@@ -249,7 +256,7 @@ FindMarkersCondition <- function(seurat,
 
       ## 5.2 Pseudobulk aggregation (version-agnostic)
       message("Aggregating counts to pseudobulk...")
-      counts_mat <- GetAssayData(seurat, assay = assay, slot = "counts")
+      counts_mat <- get_assay_data_compat(seurat, assay = assay, slot = "counts")
       groupings  <- data.frame(cluster_sample = seurat$cluster_sample)
 
       pb <- aggregate.Matrix(
@@ -280,11 +287,11 @@ FindMarkersCondition <- function(seurat,
 
       if(test_type == "Wald"){
         # Set condition factor levels: conditions[2] as reference
-        all_condition_levels <- unique(samplecon_table$condition)
+        all_condition_levels <- unique(samplecon_table[[condition_ident]])
         other_levels <- setdiff(all_condition_levels, conditions)
 
-        cluster_metadata$condition <- factor(
-          cluster_metadata$condition,
+        cluster_metadata[[condition_ident]] <- factor(
+          cluster_metadata[[condition_ident]],
           levels = c(conditions[2], conditions[1], other_levels)  # reference = conditions[2]
         )
 
@@ -299,8 +306,8 @@ FindMarkersCondition <- function(seurat,
           }
         }
 
-        n_cond1 <- sum(cluster_metadata$condition == conditions[1], na.rm = TRUE)
-        n_cond2 <- sum(cluster_metadata$condition == conditions[2], na.rm = TRUE)
+        n_cond1 <- sum(cluster_metadata[[condition_ident]] == conditions[1], na.rm = TRUE)
+        n_cond2 <- sum(cluster_metadata[[condition_ident]] == conditions[2], na.rm = TRUE)
 
         message("Pseudobulk samples - ", conditions[1], ": ", n_cond1,
                 " | ", conditions[2], ": ", n_cond2)
@@ -313,7 +320,7 @@ FindMarkersCondition <- function(seurat,
       }
       ## 5.4 Check for batch confounding
       if (!is.null(batch_var)) {
-        batch_table <- table(cluster_metadata$condition, cluster_metadata[[batch_var]])
+        batch_table <- table(cluster_metadata[[condition_ident]], cluster_metadata[[batch_var]])
         message("\nBatch distribution:")
         print(batch_table)
         if (any(rowSums(batch_table > 0) == 1)) {
