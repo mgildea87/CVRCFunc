@@ -19,7 +19,8 @@ FindMarkersBulk(
   alpha = 0.1,
   assay = "RNA",
   test_type = "LRT",
-  contrast_level = NULL
+  contrast_level = NULL,
+  NormalizeData = TRUE
 )
 }
 \arguments{
@@ -54,6 +55,8 @@ Interpreted as percent if > 1 (e.g. 25 means 25\%). If <= 1, treated as fraction
 \item{test_type}{"LRT" (likelihood ratio test) or "Wald"}
 
 \item{contrast_level}{unused currently, reserved for future contrast control}
+
+\item{NormalizeData}{Logical. Whether to normalize the data before pseudobulking using Seurat's default normalization method (LogNormalize). Default: TRUE}
 }
 \value{
 Invisibly returns a list with:

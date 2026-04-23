@@ -267,12 +267,13 @@ FindMarkers <- function(seurat,
 
   # Create DESeq2 object
   cat("Creating DESeq2 object...\n")
-  if (any(abs(cluster_counts - round(cluster_counts)) > .Machine$double.eps^0.5, na.rm = TRUE)) {
+  count_data <- as.matrix(cluster_counts)
+  if (any(abs(count_data - round(count_data)) > .Machine$double.eps^0.5, na.rm = TRUE)) {
     stop("Non-integer pseudobulk counts detected. DESeq2 requires raw integer counts.")
   }
   # DESeq2 requires integer count data.
-  storage.mode(cluster_counts) <- "integer"
-  dds <- DESeqDataSetFromMatrix(cluster_counts,
+  storage.mode(count_data) <- "integer"
+  dds <- DESeqDataSetFromMatrix(count_data,
                                 colData = cluster_metadata,
                                 design = design_formula)
 

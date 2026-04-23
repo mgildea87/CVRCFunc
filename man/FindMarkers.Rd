@@ -19,7 +19,8 @@ FindMarkers(
   alpha = 0.1,
   assay = "RNA",
   test_type = "LRT",
-  contrast_level = NULL
+  contrast_level = NULL,
+  NormalizeData = TRUE
 )
 }
 \arguments{
@@ -42,6 +43,8 @@ FindMarkers(
 \item{alpha}{FDR adjusted p-value threshold for significance in plotting. 0.1 by default.}
 
 \item{assay}{Which assay to use. RNA by default. I added this parameter to enable use of ADT data when desired.}
+
+\item{NormalizeData}{Logical. Whether to normalize the data before pseudobulking using Seurat's default normalization method (LogNormalize). Default: TRUE}
 }
 \value{
 .csv files with marker genes per \code{clus_ident}. .pdf files with diagnostic plots

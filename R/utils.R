@@ -188,3 +188,4 @@ safe_pheatmap <- function(mat, ...) {
 
   pheatmap::pheatmap(mat, ...)
 }
+

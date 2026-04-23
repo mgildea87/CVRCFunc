@@ -22,7 +22,8 @@ FindMarkersCondition(
   alpha = 0.1,
   assay = "RNA",
   test_type = "LRT",
-  save_DESeq_object = FALSE
+  save_DESeq_object = FALSE,
+  NormalizeData = TRUE
 )
 }
 \arguments{
@@ -64,6 +65,8 @@ If \code{NULL} and \code{test_type = "LRT"}, all levels of \code{condition_ident
 \item{test_type}{"LRT" (likelihood ratio test) or "Wald"}
 
 \item{save_DESeq_object}{Whether to save the DESeq2 object for each cluster. Default: FALSE}
+
+\item{NormalizeData}{Logical. Whether to normalize the data before pseudobulking using Seurat's default normalization method (LogNormalize). Default: TRUE}
 }
 \value{
 Invisibly returns a list with:
