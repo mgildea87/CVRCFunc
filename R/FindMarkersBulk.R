@@ -17,6 +17,7 @@
 #' @param assay Which assay to use. Default: 'RNA'
 #' @param test_type "LRT" (likelihood ratio test) or "Wald"
 #' @param contrast_level unused currently, reserved for future contrast control
+#' @param NormalizeData Logical. Whether to normalize the data before pseudobulking using Seurat's default normalization method (LogNormalize). Default: TRUE
 #'
 #' @return Invisibly returns a list with:
 #'   \item{all_results}{A list of data.frames with DE results per cluster}
@@ -48,7 +49,8 @@ FindMarkersBulk <- function(seurat,
                             alpha = 0.1,
                             assay = "RNA",
                             test_type = "LRT",
-                            contrast_level = NULL) {
+                            contrast_level = NULL,
+                            NormalizeData = TRUE) {
   start <- Sys.time()
   coef <- variable <- value <- NULL
 
@@ -89,7 +91,9 @@ FindMarkersBulk <- function(seurat,
   DefaultAssay(seurat) <- assay
 
   #Normalize
-  seurat <- NormalizeData(seurat, assay = assay)
+  if (NormalizeData) {
+    seurat <- Seurat::NormalizeData(seurat, assay = assay)
+  }
 
   # Interpret pct.in as percent or fraction
   pct_in_threshold <- if (pct.in > 1) pct.in / 100 else pct.in
@@ -281,7 +285,14 @@ FindMarkersBulk <- function(seurat,
       }
 
       ## 5.6 Create DESeq2 object
-      cluster_counts <- as.data.frame(t(as.matrix(pb)))
+      cluster_counts <- t(as.matrix(pb))
+      if (any(abs(cluster_counts - round(cluster_counts)) > .Machine$double.eps^0.5, na.rm = TRUE)) {
+        stop("Non-integer pseudobulk counts detected for cluster ", cluster,
+             ". DESeq2 requires raw integer counts.")
+      }
+      # DESeq2 requires integer count data.
+      storage.mode(cluster_counts) <- "integer"
+      cluster_counts <- as.data.frame(cluster_counts)
 
       dds <- DESeqDataSetFromMatrix(
         countData = cluster_counts,

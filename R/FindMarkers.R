@@ -9,6 +9,7 @@
 #' @param alpha FDR adjusted p-value threshold for significance in plotting. 0.1 by default.
 #' @param out_dir Name of output directory
 #' @param assay Which assay to use. RNA by default. I added this parameter to enable use of ADT data when desired.
+#' @param NormalizeData Logical. Whether to normalize the data before pseudobulking using Seurat's default normalization method (LogNormalize). Default: TRUE
 #' @return .csv files with marker genes per \code{clus_ident}. .pdf files with diagnostic plots
 #' @import Seurat pheatmap DESeq2 ggplot2 ggrepel stringr utils grDevices
 #' @importFrom BiocGenerics t
@@ -30,7 +31,8 @@ FindMarkers <- function(seurat,
                         alpha = 0.1,
                         assay = 'RNA',
                         test_type = "LRT",
-                        contrast_level = NULL){
+                        contrast_level = NULL,
+                        NormalizeData = TRUE){
 
   start <- Sys.time()
   coef <- variable <- value <- NULL
@@ -85,6 +87,12 @@ FindMarkers <- function(seurat,
   if('layers' %in% slotNames(seurat[[assay]]) && length(grep(SeuratObject::Layers(seurat[[assay]]), pattern = '^counts')) > 1) {
     stop("Seurat object has split layers. Please join layers before running FindMarkers.")
   }
+
+  # Normalize
+  if (NormalizeData) {
+    seurat <- Seurat::NormalizeData(seurat, assay = assay)
+  }
+
   # Set identities and subset
   Idents(seurat) <- clus_ident
   seurat <- subset(seurat, idents = c(group_1, group_2))
@@ -259,6 +267,11 @@ FindMarkers <- function(seurat,
 
   # Create DESeq2 object
   cat("Creating DESeq2 object...\n")
+  if (any(abs(cluster_counts - round(cluster_counts)) > .Machine$double.eps^0.5, na.rm = TRUE)) {
+    stop("Non-integer pseudobulk counts detected. DESeq2 requires raw integer counts.")
+  }
+  # DESeq2 requires integer count data.
+  storage.mode(cluster_counts) <- "integer"
   dds <- DESeqDataSetFromMatrix(cluster_counts,
                                 colData = cluster_metadata,
                                 design = design_formula)
