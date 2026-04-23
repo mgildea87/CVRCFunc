@@ -525,6 +525,9 @@ FindMarkersBulk <- function(seurat,
 
       TRUE
     }, error = function(e) {
+      if (grepl("Non-integer pseudobulk counts detected", e$message, fixed = TRUE)) {
+        stop(e)
+      }
       message("\n!!! ERROR processing cluster ", cluster, " !!!")
       message("Error message: ", e$message)
       # Close any open graphics devices
@@ -536,6 +539,10 @@ FindMarkersBulk <- function(seurat,
       next
     }
     message("Successfully completed cluster ", cluster)
+  }
+
+  if (length(all_results) == 0) {
+    stop("No clusters completed successfully. See cluster-level error messages above.")
   }
 
   ## ---------------------------

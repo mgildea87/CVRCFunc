@@ -88,3 +88,22 @@ cleanup_test_files <- function(path) {
     unlink(path, recursive = TRUE)
   }
 }
+
+create_non_integer_test_seurat <- function() {
+  seurat <- create_de_test_seurat()
+
+  counts <- tryCatch(
+    Seurat::GetAssayData(seurat, assay = "RNA", layer = "counts"),
+    error = function(...) Seurat::GetAssayData(seurat, assay = "RNA", slot = "counts")
+  )
+
+  counts <- as.matrix(counts)
+  counts[1, 1] <- counts[1, 1] + 0.5
+
+  seurat <- tryCatch(
+    SeuratObject::SetAssayData(seurat, assay = "RNA", layer = "counts", new.data = counts),
+    error = function(...) SeuratObject::SetAssayData(seurat, assay = "RNA", slot = "counts", new.data = counts)
+  )
+
+  seurat
+}

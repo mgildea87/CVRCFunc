@@ -138,3 +138,27 @@ test_that("FindMarkersCondition completes and writes summary outputs", {
 
   cleanup_test_files(out_dir)
 })
+
+test_that("FindMarkersCondition fails on non-integer pseudobulk counts", {
+  seurat <- create_non_integer_test_seurat()
+  out_dir <- tempfile("findmarkerscondition-noninteger-")
+
+  expect_error(
+    FindMarkersCondition(
+      seurat = seurat,
+      clus_ident = "seurat_clusters",
+      sample_ident = "sample_id",
+      condition_ident = "treatment",
+      conditions = c("stim", "ctrl"),
+      test_type = "Wald",
+      expfilt_counts = 1,
+      expfilt_freq = 0.25,
+      alpha = 0.5,
+      n_top_genes = 5,
+      out_dir = out_dir
+    ),
+    "Non-integer pseudobulk counts detected"
+  )
+
+  cleanup_test_files(out_dir)
+})

@@ -120,3 +120,26 @@ test_that("FindMarkers completes and writes expected result files", {
 
   cleanup_test_files(out_dir)
 })
+
+test_that("FindMarkers fails on non-integer pseudobulk counts", {
+  seurat <- create_non_integer_test_seurat()
+  out_dir <- tempfile("findmarkers-noninteger-")
+
+  expect_error(
+    FindMarkers(
+      seurat = seurat,
+      clus_ident = "seurat_clusters",
+      group_1 = "0",
+      group_2 = "1",
+      sample_ident = "sample_id",
+      test_type = "Wald",
+      expfilt_counts = 1,
+      expfilt_freq = 0.25,
+      alpha = 0.5,
+      out_dir = out_dir
+    ),
+    "Non-integer pseudobulk counts detected"
+  )
+
+  cleanup_test_files(out_dir)
+})
