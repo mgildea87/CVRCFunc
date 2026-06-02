@@ -129,3 +129,48 @@ test_that("FindMarkersBulk fails on non-integer pseudobulk counts", {
 
   cleanup_test_files(out_dir)
 })
+
+test_that("FindMarkersBulk LRT with batch keeps fold-change direction after shrinkage", {
+  seurat <- create_de_test_seurat()
+  out_dir <- tempfile("findmarkersbulk-lrt-batch-")
+
+  result <- FindMarkersBulk(
+    seurat = seurat,
+    clus_ident = "seurat_clusters",
+    sample_ident = "sample_id",
+    batch_var = "batch",
+    test_type = "LRT",
+    expfilt_counts = 1,
+    expfilt_freq = 0.25,
+    alpha = 0.5,
+    n_top_genes = 5,
+    out_dir = out_dir
+  )
+
+  expect_true(all(c("0", "1") %in% names(result$all_results)))
+
+  cluster0 <- result$all_results[["0"]]
+  cluster1 <- result$all_results[["1"]]
+
+  expect_true(all(c("log2FoldChange", "log2FoldChange_raw") %in% colnames(cluster0)))
+  expect_true(all(c("log2FoldChange", "log2FoldChange_raw") %in% colnames(cluster1)))
+
+  keep0 <- !is.na(cluster0$log2FoldChange) & !is.na(cluster0$log2FoldChange_raw)
+  keep1 <- !is.na(cluster1$log2FoldChange) & !is.na(cluster1$log2FoldChange_raw)
+
+  expect_true(any(keep0))
+  expect_true(any(keep1))
+
+  sign0 <- sign(cluster0$log2FoldChange[keep0]) == sign(cluster0$log2FoldChange_raw[keep0]) |
+    cluster0$log2FoldChange[keep0] == 0 | cluster0$log2FoldChange_raw[keep0] == 0
+  sign1 <- sign(cluster1$log2FoldChange[keep1]) == sign(cluster1$log2FoldChange_raw[keep1]) |
+    cluster1$log2FoldChange[keep1] == 0 | cluster1$log2FoldChange_raw[keep1] == 0
+
+  expect_true(all(sign0))
+  expect_true(all(sign1))
+
+  expect_true(any(abs(cluster0$log2FoldChange[keep0] - cluster0$log2FoldChange_raw[keep0]) > 1e-8))
+  expect_true(any(abs(cluster1$log2FoldChange[keep1] - cluster1$log2FoldChange_raw[keep1]) > 1e-8))
+
+  cleanup_test_files(out_dir)
+})

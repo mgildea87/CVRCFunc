@@ -162,3 +162,48 @@ test_that("FindMarkersCondition fails on non-integer pseudobulk counts", {
 
   cleanup_test_files(out_dir)
 })
+
+test_that("FindMarkersCondition LRT with batch uses condition coefficient direction", {
+  seurat <- create_de_test_seurat()
+  out_dir <- tempfile("findmarkerscondition-lrt-batch-")
+
+  result <- FindMarkersCondition(
+    seurat = seurat,
+    clus_ident = "seurat_clusters",
+    sample_ident = "sample_id",
+    condition_ident = "treatment",
+    conditions = c("stim", "ctrl"),
+    batch_var = "batch",
+    test_type = "LRT",
+    expfilt_counts = 1,
+    expfilt_freq = 0.25,
+    alpha = 0.5,
+    n_top_genes = 5,
+    out_dir = out_dir
+  )
+
+  expect_true(all(c("0", "1") %in% names(result$all_results)))
+
+  cluster0 <- result$all_results[["0"]]
+  cluster1 <- result$all_results[["1"]]
+
+  expect_true(all(c("log2FoldChange", "log2FoldChange_raw") %in% colnames(cluster0)))
+  expect_true(all(c("log2FoldChange", "log2FoldChange_raw") %in% colnames(cluster1)))
+
+  genes_up_in_stim_cluster0 <- paste0("Gene", sprintf("%03d", 81:110))
+  genes_up_in_ctrl_cluster1 <- paste0("Gene", sprintf("%03d", 111:140))
+
+  mean_lfc_cluster0 <- mean(
+    cluster0$log2FoldChange[cluster0$feature %in% genes_up_in_stim_cluster0],
+    na.rm = TRUE
+  )
+  mean_lfc_cluster1 <- mean(
+    cluster1$log2FoldChange[cluster1$feature %in% genes_up_in_ctrl_cluster1],
+    na.rm = TRUE
+  )
+
+  expect_gt(mean_lfc_cluster0, 0)
+  expect_lt(mean_lfc_cluster1, 0)
+
+  cleanup_test_files(out_dir)
+})
