@@ -318,18 +318,34 @@ FindMarkersBulk <- function(seurat,
       vst <- varianceStabilizingTransformation(dds, blind = FALSE)
 
       message("Running DESeq2 with ", test_type, " test...")
+      coef_names <- character(0)
+      coef_name <- NULL
       if (test_type == "LRT") {
         dds <- DESeq(dds, test = "LRT", reduced = reduced_formula)
-        res <- results(dds, alpha = alpha)
+        coef_names <- grep("iscluster", resultsNames(dds), value = TRUE)
+        if (length(coef_names) == 0) {
+          stop("No 'iscluster' coefficient found in resultsNames(dds)")
+        }
+        coef_name <- coef_names[1]
+        if (length(coef_names) > 1) {
+          message("Multiple 'iscluster' coefficients found; using: ", coef_name)
+        }
+        # For LRT, request results for the iscluster coefficient explicitly.
+        # Otherwise DESeq2 defaults to the last design term (often batch/covariate).
+        res <- results(dds, name = coef_name, alpha = alpha)
       } else { # Wald
         dds <- DESeq(dds, test = "Wald")
-        iscluster_coef <- grep("iscluster", resultsNames(dds))[1]
-        if (is.na(iscluster_coef)) {
+        coef_names <- grep("iscluster", resultsNames(dds), value = TRUE)
+        if (length(coef_names) == 0) {
           stop("No 'iscluster' coefficient found in resultsNames(dds)")
+        }
+        coef_name <- coef_names[1]
+        if (length(coef_names) > 1) {
+          message("Multiple 'iscluster' coefficients found; using: ", coef_name)
         }
         res <- results(
           dds,
-          name  = resultsNames(dds)[iscluster_coef],
+          name  = coef_name,
           alpha = alpha
         )
       }
@@ -338,17 +354,8 @@ FindMarkersBulk <- function(seurat,
               sum(res$padj < alpha, na.rm = TRUE))
 
       ## 5.9 LFC shrinkage with fallback
-      message("Shrinking log2 fold changes...")
       res_raw <- as.data.frame(res)
-      coef_names <- grep("iscluster", resultsNames(dds), value = TRUE)
-      if (length(coef_names) == 0) {
-        stop("No 'iscluster' coefficient found for LFC shrinkage in cluster ", cluster)
-      }
-      coef_name <- coef_names[1]
-      if (length(coef_names) > 1) {
-        message("Multiple 'iscluster' coefficients found; using: ", coef_name)
-      }
-
+      message("Shrinking log2 fold changes...")
       res_shrink <- tryCatch(
         {
           lfcShrink(dds, coef = coef_name, res = res, type = "apeglm")
@@ -360,7 +367,7 @@ FindMarkersBulk <- function(seurat,
         }
       )
       res_shrink <- as.data.frame(res_shrink)
-      if ("log2FoldChange" %in% colnames(res_raw)) {
+      if ("log2FoldChange" %in% colnames(res_raw) && "log2FoldChange" %in% colnames(res_shrink)) {
         res_shrink$log2FoldChange_raw <- res_raw$log2FoldChange
       }
       res_shrink$sig <- "Not significant"

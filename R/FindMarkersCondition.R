@@ -367,7 +367,17 @@ FindMarkersCondition <- function(seurat,
       message("Running DESeq2 with ", test_type, " test...")
       if (test_type == "LRT") {
         dds <- DESeq(dds, test = "LRT", reduced = reduced_formula)
-        res <- results(dds, alpha = alpha)
+        coef_names <- grep(condition_ident, resultsNames(dds), value = TRUE)
+        if (length(coef_names) == 0) {
+          stop("No '", condition_ident, "' coefficient found in resultsNames(dds)")
+        }
+        coef_name <- coef_names[1]
+        if (length(coef_names) > 1) {
+          message("Multiple '", condition_ident, "' coefficients found; using: ", coef_name)
+        }
+        # For LRT, request the condition coefficient explicitly so reported LFC
+        # corresponds to the intended condition effect.
+        res <- results(dds, name = coef_name, alpha = alpha)
       } else { # Wald
         dds <- DESeq(dds, test = "Wald")
         res <- results(dds, contrast = c(condition_ident, conditions[1], conditions[2]), alpha = alpha)

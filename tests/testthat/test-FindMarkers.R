@@ -143,3 +143,35 @@ test_that("FindMarkers fails on non-integer pseudobulk counts", {
 
   cleanup_test_files(out_dir)
 })
+
+test_that("FindMarkers LRT with batch keeps fold-change direction after shrinkage", {
+  seurat <- create_de_test_seurat()
+  out_dir <- tempfile("findmarkers-lrt-batch-")
+
+  result <- FindMarkers(
+    seurat = seurat,
+    clus_ident = "seurat_clusters",
+    group_1 = "0",
+    group_2 = "1",
+    sample_ident = "sample_id",
+    batch_var = "batch",
+    test_type = "LRT",
+    expfilt_counts = 1,
+    expfilt_freq = 0.25,
+    alpha = 0.5,
+    out_dir = out_dir
+  )
+
+  expect_true(all(c("log2FoldChange", "log2FoldChange_raw") %in% colnames(result$results)))
+
+  keep <- !is.na(result$results$log2FoldChange) & !is.na(result$results$log2FoldChange_raw)
+  expect_true(any(keep))
+
+  same_sign <- sign(result$results$log2FoldChange[keep]) == sign(result$results$log2FoldChange_raw[keep]) |
+    result$results$log2FoldChange[keep] == 0 | result$results$log2FoldChange_raw[keep] == 0
+  expect_true(all(same_sign))
+
+  expect_true(any(abs(result$results$log2FoldChange[keep] - result$results$log2FoldChange_raw[keep]) > 1e-8))
+
+  cleanup_test_files(out_dir)
+})

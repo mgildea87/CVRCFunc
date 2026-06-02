@@ -301,37 +301,44 @@ FindMarkers <- function(seurat,
 
   # DESeq2
   cat(paste("Running DESeq2 with", test_type, "test...\n"))
+  coef_names <- character(0)
+  coef_name <- NULL
   if (test_type == "LRT") {
     dds <- DESeq(dds, test = "LRT", reduced = reduced_formula)
-    res <- results(dds, alpha = alpha)
+    coef_names <- grep("cluster", resultsNames(dds), value = TRUE)
+    if (length(coef_names) == 0) {
+      stop("No 'cluster' coefficient found in resultsNames(dds)")
+    }
+    coef_name <- coef_names[1]
+    if (length(coef_names) > 1) {
+      message("Multiple 'cluster' coefficients found; using: ", coef_name)
+    }
+    # For LRT, request the cluster coefficient explicitly so results and shrinkage align.
+    res <- results(dds, name = coef_name, alpha = alpha)
   } else if (test_type == "Wald") {
     dds <- DESeq(dds, test = "Wald")
     # Extract results for cluster coefficient
-    contrast_names <- grep("cluster", resultsNames(dds), value = TRUE)
-    if (length(contrast_names) == 0) {
+    coef_names <- grep("cluster", resultsNames(dds), value = TRUE)
+    if (length(coef_names) == 0) {
       stop("No 'cluster' coefficient found in resultsNames(dds)")
     }
-    contrast_name <- contrast_names[1]
-    if (length(contrast_names) > 1) {
-      message("Multiple 'cluster' coefficients found; using: ", contrast_name)
+    coef_name <- coef_names[1]
+    if (length(coef_names) > 1) {
+      message("Multiple 'cluster' coefficients found; using: ", coef_name)
     }
-    res <- results(dds, name = contrast_name, alpha = alpha)
+    res <- results(dds, name = coef_name, alpha = alpha)
   }
 
   cat(paste("Significant genes (padj <", alpha, "):", sum(res$padj < alpha, na.rm = TRUE), "\n\n"))
 
   # Shrink the log2 fold changes
   cat("Shrinking log2 fold changes...\n")
-  coef_names <- grep("cluster", resultsNames(dds), value = TRUE)
-  if (length(coef_names) == 0) {
-    stop("No 'cluster' coefficient found for LFC shrinkage")
-  }
-  coef_name <- coef_names[1]
-  if (length(coef_names) > 1) {
-    message("Multiple 'cluster' coefficients found; using: ", coef_name)
-  }
+  res_raw <- as.data.frame(res)
   res_shrink <- lfcShrink(dds, coef = coef_name, res = res, type = "apeglm")
   res_shrink <- as.data.frame(res_shrink)
+  if ("log2FoldChange" %in% colnames(res_raw) && "log2FoldChange" %in% colnames(res_shrink)) {
+    res_shrink$log2FoldChange_raw <- res_raw$log2FoldChange
+  }
 
   res_shrink$sig <- rep('Not significant', nrow(res_shrink))
   res_shrink$sig[which(res_shrink$padj < alpha)] <- 'Significant'
