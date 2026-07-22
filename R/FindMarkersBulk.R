@@ -330,6 +330,7 @@ FindMarkersBulk <- function(seurat,
         if (length(coef_names) > 1) {
           message("Multiple 'iscluster' coefficients found; using: ", coef_name)
         }
+        message("LRT log2FC uses coefficient: ", coef_name)
         # For LRT, request results for the iscluster coefficient explicitly.
         # Otherwise DESeq2 defaults to the last design term (often batch/covariate).
         res <- results(dds, name = coef_name, alpha = alpha)
