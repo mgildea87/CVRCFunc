@@ -33,7 +33,7 @@
 #'   \item{params}{List of key parameters}
 #'
 #' outputs:
-#'   - .csv files with DE results per cluster. log2FC values are shrunken if test_type = "Wald" and both shrunken and raw are reported. If LRT, log2FC are from the full model without shrinkage.
+#'   - .csv files with DE results per cluster. log2FC values are shrunken if test_type = "Wald" and both shrunken and raw are reported. If LRT, log2FC are from the full model without shrinkage. If 'LRT' and multiple coefficients for condition_ident are present, the first one is used for reported log2FC and factor level supplied by conditions is not respected.
 #'   - .pdf files with QC plots and top marker heatmap
 #'
 #' @import Seurat pheatmap DESeq2 ggplot2 ggrepel stringr utils grDevices
@@ -375,6 +375,7 @@ FindMarkersCondition <- function(seurat,
         if (length(coef_names) > 1) {
           message("Multiple '", condition_ident, "' coefficients found; using: ", coef_name)
         }
+        message("LRT log2FC uses coefficient: ", coef_name)
         # For LRT, request the condition coefficient explicitly so reported LFC
         # corresponds to the intended condition effect.
         res <- results(dds, name = coef_name, alpha = alpha)

@@ -313,6 +313,7 @@ FindMarkers <- function(seurat,
     if (length(coef_names) > 1) {
       message("Multiple 'cluster' coefficients found; using: ", coef_name)
     }
+    message("LRT log2FC uses coefficient: ", coef_name)
     # For LRT, request the cluster coefficient explicitly so results and shrinkage align.
     res <- results(dds, name = coef_name, alpha = alpha)
   } else if (test_type == "Wald") {
