@@ -35,7 +35,7 @@ Runs pseudobulk DE per cluster between two conditions.
 - supports `batch_var`, `covariates`, and custom `design_formula`.
 - use `test_type = "LRT"` for likelihood ratio tests or `test_type = "Wald"` for Wald tests.
 - with `test_type = "LRT"`, the function uses a reduced model automatically when no custom design is provided. The reduced design will be the full design without condition_ident. If conditions == NULL (default) test will be run including all levels of condition_ident. Otherwise data will be subset to the 2 specified levels of condition_ident.
-- LRT output uses the raw DESeq2 `log2FC` only; a separate `log2FoldChange_raw` column is not added.
+- LRT output uses the raw DESeq2 `log2FC` as the main `log2FoldChange` column, does not add a separate `log2FoldChange_raw` column, and adds one `log2FoldChange_<coef_name>` column per condition coefficient.
 
 ### `FindMarkers()`
 Compares two groups of cells defined by a metadata identity.

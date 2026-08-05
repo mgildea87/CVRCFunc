@@ -192,6 +192,10 @@ test_that("FindMarkersCondition LRT with batch uses supplied condition direction
     expect_true("log2FoldChange" %in% colnames(cluster1))
     expect_false("log2FoldChange_raw" %in% colnames(cluster0))
     expect_false("log2FoldChange_raw" %in% colnames(cluster1))
+    expect_true("log2FoldChange_treatment_stim_vs_ctrl" %in% colnames(cluster0))
+    expect_true("log2FoldChange_treatment_stim_vs_ctrl" %in% colnames(cluster1))
+    expect_equal(cluster0$log2FoldChange, cluster0$log2FoldChange_treatment_stim_vs_ctrl)
+    expect_equal(cluster1$log2FoldChange, cluster1$log2FoldChange_treatment_stim_vs_ctrl)
 
   genes_up_in_stim_cluster0 <- paste0("Gene", sprintf("%03d", 81:110))
   genes_up_in_ctrl_cluster1 <- paste0("Gene", sprintf("%03d", 111:140))
@@ -282,6 +286,9 @@ test_that("FindMarkersCondition LRT with >3 condition levels respects supplied c
   cluster0 <- result$all_results[["0"]]
   cluster1 <- result$all_results[["1"]]
 
+  lfc_cols_cluster0 <- grep("^log2FoldChange_treatment_", colnames(cluster0), value = TRUE)
+  lfc_cols_cluster1 <- grep("^log2FoldChange_treatment_", colnames(cluster1), value = TRUE)
+
   mean_lfc_cluster0 <- mean(
     cluster0$log2FoldChange[cluster0$feature %in% paste0("Gene", sprintf("%03d", 81:110))],
     na.rm = TRUE
@@ -293,6 +300,12 @@ test_that("FindMarkersCondition LRT with >3 condition levels respects supplied c
 
   expect_gt(mean_lfc_cluster0, 0)
   expect_lt(mean_lfc_cluster1, 0)
+  expect_true("log2FoldChange_treatment_stim_vs_ctrl" %in% lfc_cols_cluster0)
+  expect_true("log2FoldChange_treatment_stim_vs_ctrl" %in% lfc_cols_cluster1)
+  expect_equal(length(lfc_cols_cluster0), 3L)
+  expect_equal(length(lfc_cols_cluster1), 3L)
+  expect_equal(cluster0$log2FoldChange, cluster0$log2FoldChange_treatment_stim_vs_ctrl)
+  expect_equal(cluster1$log2FoldChange, cluster1$log2FoldChange_treatment_stim_vs_ctrl)
 
   cleanup_test_files(out_dir)
 })

@@ -193,6 +193,18 @@ FindMarkersCondition <- function(seurat,
     coef_names[1]
   }
 
+  .get_condition_coef_names <- function(dds, context) {
+    coef_names <- grep(paste0("^", condition_ident, "_"), resultsNames(dds), value = TRUE)
+    if (length(coef_names) == 0) {
+      stop(
+        "No '", condition_ident, "' coefficients found in resultsNames(dds) for ",
+        context, ". Available coefficients: ",
+        paste(resultsNames(dds), collapse = ", ")
+      )
+    }
+    coef_names
+  }
+
   # Build or validate design formula
   if (is.null(design_formula)) {
     design_formula <- .build_design(batch_var, covariates)
@@ -401,6 +413,10 @@ FindMarkersCondition <- function(seurat,
       message("Running DESeq2 with ", test_type, " test...")
       if (test_type == "LRT") {
         dds <- DESeq(dds, test = "LRT", reduced = reduced_formula)
+        lrt_coef_names <- .get_condition_coef_names(
+          dds,
+          context = paste0("cluster ", cluster, " LRT coefficient expansion")
+        )
         coef_name <- .get_condition_coef_name(
           dds,
           context = paste0("cluster ", cluster, " LRT reporting"),
@@ -463,6 +479,12 @@ FindMarkersCondition <- function(seurat,
       } else {
         message("Skipping LFC shrinkage for LRT; using raw DESeq2 results.")
         res_shrink <- as.data.frame(res)
+        res_shrink$feature <- rownames(res_shrink)
+        for (coef_name in lrt_coef_names) {
+          coef_res <- as.data.frame(results(dds, name = coef_name, alpha = alpha))
+          res_shrink[[paste0("log2FoldChange_", coef_name)]] <-
+            coef_res[match(res_shrink$feature, rownames(coef_res)), "log2FoldChange"]
+        }
       }
       res_shrink$sig  <- "Not significant"
       res_shrink$sig[which(res_shrink$padj < alpha)] <- "Significant"
