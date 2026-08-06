@@ -81,6 +81,31 @@ test_that("FindMarkers rejects missing covariates", {
   )
 })
 
+test_that("FindMarkers writes console output to a log file by default", {
+  seurat <- create_de_test_seurat()
+  out_dir <- tempfile("findmarkers-log-")
+
+  result <- FindMarkers(
+    seurat = seurat,
+    clus_ident = "seurat_clusters",
+    group_1 = "0",
+    group_2 = "1",
+    sample_ident = "sample_id",
+    test_type = "Wald",
+    expfilt_counts = 1,
+    expfilt_freq = 0.25,
+    alpha = 0.5,
+    out_dir = out_dir
+  )
+
+  expect_type(result, "list")
+  expect_true(file.exists(file.path(out_dir, "analysis.log")))
+  log_contents <- readLines(file.path(out_dir, "analysis.log"), warn = FALSE)
+  expect_true(any(grepl("FindMarkers Analysis", log_contents, fixed = TRUE)))
+
+  cleanup_test_files(out_dir)
+})
+
 test_that("FindMarkers completes and writes expected result files", {
   seurat <- create_de_test_seurat()
   out_dir <- tempfile("findmarkers-success-")

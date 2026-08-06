@@ -97,6 +97,32 @@ test_that("FindMarkersCondition rejects invalid covariates", {
   )
 })
 
+test_that("FindMarkersCondition writes console output to a log file by default", {
+  seurat <- create_de_test_seurat()
+  out_dir <- tempfile("findmarkerscondition-log-")
+
+  result <- FindMarkersCondition(
+    seurat = seurat,
+    clus_ident = "seurat_clusters",
+    sample_ident = "sample_id",
+    condition_ident = "treatment",
+    conditions = c("stim", "ctrl"),
+    test_type = "Wald",
+    expfilt_counts = 1,
+    expfilt_freq = 0.25,
+    alpha = 0.5,
+    n_top_genes = 5,
+    out_dir = out_dir
+  )
+
+  expect_type(result, "list")
+  expect_true(file.exists(file.path(out_dir, "analysis.log")))
+  log_contents <- readLines(file.path(out_dir, "analysis.log"), warn = FALSE)
+  expect_true(any(grepl("Processing cluster", log_contents, fixed = TRUE)))
+
+  cleanup_test_files(out_dir)
+})
+
 test_that("FindMarkersCondition completes and writes summary outputs", {
   seurat <- create_de_test_seurat()
   out_dir <- tempfile("findmarkerscondition-success-")

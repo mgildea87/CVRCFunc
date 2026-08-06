@@ -26,6 +26,7 @@ Performs pseudobulk differential expression for every cluster using sample-level
 - `sample_ident`: sample identifier column used for pseudobulking.
 - optional `batch_var`, `covariates`, or custom `design_formula`.
 - outputs CSV and PDF QC files into `out_dir`.
+- optionally writes runtime messages and warnings to a log file via `log_file`.
 
 ### `FindMarkersCondition()`
 Runs pseudobulk DE per cluster between two conditions.
@@ -61,7 +62,8 @@ bulk_res <- FindMarkersBulk(
 	sample_ident = "sample_id",
 	batch_var = "batch",
 	covariates = c("age", "sex"),
-	out_dir = "FindMarkersBulk_output"
+	out_dir = "FindMarkersBulk_output",
+	log_file = file.path("FindMarkersBulk_output", "analysis.log")
 )
 
 # Condition DE within clusters (LRT)

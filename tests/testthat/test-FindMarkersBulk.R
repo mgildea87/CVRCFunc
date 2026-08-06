@@ -130,6 +130,33 @@ test_that("FindMarkersBulk fails on non-integer pseudobulk counts", {
   cleanup_test_files(out_dir)
 })
 
+test_that("FindMarkersBulk writes console output to a log file by default", {
+  seurat <- create_de_test_seurat()
+  out_dir <- tempfile("findmarkersbulk-log-")
+  log_file <- file.path(out_dir, "analysis.log")
+
+  result <- FindMarkersBulk(
+    seurat = seurat,
+    clus_ident = "seurat_clusters",
+    sample_ident = "sample_id",
+    test_type = "Wald",
+    expfilt_counts = 1,
+    expfilt_freq = 0.25,
+    alpha = 0.5,
+    n_top_genes = 5,
+    out_dir = out_dir
+  )
+
+  expect_type(result, "list")
+  expect_true(file.exists(log_file))
+  log_contents <- readLines(log_file, warn = FALSE)
+  expect_true(any(grepl("Processing cluster", log_contents, fixed = TRUE)))
+  expect_true(any(grepl("Analysis Complete", log_contents, fixed = TRUE)))
+  expect_false(any(grepl(normalizePath(log_file, mustWork = FALSE), log_contents, fixed = TRUE)))
+
+  cleanup_test_files(out_dir)
+})
+
 test_that("FindMarkersBulk LRT with batch keeps fold-change direction after shrinkage", {
   seurat <- create_de_test_seurat()
   out_dir <- tempfile("findmarkersbulk-lrt-batch-")

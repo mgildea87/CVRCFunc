@@ -13,6 +13,7 @@
 #' @param pct.in Filter threshold for top marker genes per cluster.
 #'        Interpreted as percent if > 1 (e.g. 25 means 25\%). If <= 1, treated as fraction. Default: 25. Output is a fraction.
 #' @param out_dir Name of output directory
+#' @param log_file Optional path to a file where runtime messages and warnings will be written. If NULL, a file named analysis.log is created in out_dir. Default: NULL
 #' @param alpha FDR adjusted p-value threshold for significance in plotting. Default: 0.1
 #' @param assay Which assay to use. Default: 'RNA'
 #' @param test_type "LRT" (likelihood ratio test) or "Wald"
@@ -46,6 +47,7 @@ FindMarkersBulk <- function(seurat,
                             n_top_genes = 15,
                             pct.in = 25,
                             out_dir = "FindMarkersBulk_outs",
+                            log_file = NULL,
                             alpha = 0.1,
                             assay = "RNA",
                             test_type = "LRT",
@@ -56,6 +58,59 @@ FindMarkersBulk <- function(seurat,
   .skip_cluster <- function(reason) {
     stop(structure(list(message = reason), class = c("findmarkers_skip_cluster", "error", "condition")))
   }
+
+  if (is.null(log_file)) {
+    log_file <- file.path(out_dir, "analysis.log")
+  }
+
+  .log_message <- function(...) {
+    text <- paste(..., collapse = "")
+    base::message(text)
+    log_dir <- dirname(log_file)
+    if (!identical(log_dir, ".") && nzchar(log_dir)) {
+      dir.create(log_dir, showWarnings = FALSE, recursive = TRUE)
+    }
+    base::cat(text, "\n", file = log_file, append = TRUE)
+    invisible(text)
+  }
+
+  .log_warning <- function(..., call. = FALSE) {
+    text <- paste(..., collapse = "")
+    base::warning(text, call. = call.)
+    log_dir <- dirname(log_file)
+    if (!identical(log_dir, ".") && nzchar(log_dir)) {
+      dir.create(log_dir, showWarnings = FALSE, recursive = TRUE)
+    }
+    base::cat(text, "\n", file = log_file, append = TRUE)
+    invisible(text)
+  }
+
+  .log_cat <- function(..., sep = " ", fill = FALSE, labels = NULL, append = FALSE) {
+    text <- paste(..., sep = sep)
+    base::cat(text, sep = "", fill = fill, labels = labels, append = append)
+    log_dir <- dirname(log_file)
+    if (!identical(log_dir, ".") && nzchar(log_dir)) {
+      dir.create(log_dir, showWarnings = FALSE, recursive = TRUE)
+    }
+    base::cat(text, file = log_file, append = TRUE, sep = "")
+    invisible(text)
+  }
+
+  .log_print <- function(x, ...) {
+    text <- paste(capture.output(base::print(x, ...)), collapse = "\n")
+    base::print(x, ...)
+    log_dir <- dirname(log_file)
+    if (!identical(log_dir, ".") && nzchar(log_dir)) {
+      dir.create(log_dir, showWarnings = FALSE, recursive = TRUE)
+    }
+    base::cat(text, "\n", file = log_file, append = TRUE)
+    invisible(x)
+  }
+
+  message <- .log_message
+  warning <- .log_warning
+  cat <- .log_cat
+  print <- .log_print
 
   ## ---------------------------
   ## 0. Basic input validation
