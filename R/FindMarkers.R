@@ -8,6 +8,7 @@
 #' @param expfilt_counts genes with less than \code{expfilt_counts} in \code{expfilt_freq * sample number} will be removed from DESeq2 model. 1 by default.
 #' @param alpha FDR adjusted p-value threshold for significance in plotting. 0.1 by default.
 #' @param out_dir Name of output directory
+#' @param log_file Optional path to a file where runtime messages and warnings will be written. If NULL, a file named analysis.log is created in out_dir. Default: NULL
 #' @param assay Which assay to use. RNA by default. I added this parameter to enable use of ADT data when desired.
 #' @param NormalizeData Logical. Whether to normalize the data before pseudobulking using Seurat's default normalization method (LogNormalize). Default: TRUE
 #' @return .csv files with marker genes per \code{clus_ident}. .pdf files with diagnostic plots
@@ -28,6 +29,7 @@ FindMarkers <- function(seurat,
                         expfilt_counts = 1,
                         expfilt_freq = 0.5,
                         out_dir = "FindMarkers",
+                        log_file = NULL,
                         alpha = 0.1,
                         assay = 'RNA',
                         test_type = "LRT",
@@ -37,6 +39,59 @@ FindMarkers <- function(seurat,
   start <- Sys.time()
   coef <- variable <- value <- NULL
   output_name <- paste(group_1, "vs", group_2)
+
+  if (is.null(log_file)) {
+    log_file <- file.path(out_dir, "analysis.log")
+  }
+
+  .log_message <- function(...) {
+    text <- paste(..., collapse = "")
+    base::message(text)
+    log_dir <- dirname(log_file)
+    if (!identical(log_dir, ".") && nzchar(log_dir)) {
+      dir.create(log_dir, showWarnings = FALSE, recursive = TRUE)
+    }
+    base::cat(text, "\n", file = log_file, append = TRUE)
+    invisible(text)
+  }
+
+  .log_warning <- function(..., call. = FALSE) {
+    text <- paste(..., collapse = "")
+    base::warning(text, call. = call.)
+    log_dir <- dirname(log_file)
+    if (!identical(log_dir, ".") && nzchar(log_dir)) {
+      dir.create(log_dir, showWarnings = FALSE, recursive = TRUE)
+    }
+    base::cat(text, "\n", file = log_file, append = TRUE)
+    invisible(text)
+  }
+
+  .log_cat <- function(..., sep = " ", fill = FALSE, labels = NULL, append = FALSE) {
+    text <- paste(..., sep = sep)
+    base::cat(text, sep = "", fill = fill, labels = labels, append = append)
+    log_dir <- dirname(log_file)
+    if (!identical(log_dir, ".") && nzchar(log_dir)) {
+      dir.create(log_dir, showWarnings = FALSE, recursive = TRUE)
+    }
+    base::cat(text, file = log_file, append = TRUE, sep = "")
+    invisible(text)
+  }
+
+  .log_print <- function(x, ...) {
+    text <- paste(capture.output(base::print(x, ...)), collapse = "\n")
+    base::print(x, ...)
+    log_dir <- dirname(log_file)
+    if (!identical(log_dir, ".") && nzchar(log_dir)) {
+      dir.create(log_dir, showWarnings = FALSE, recursive = TRUE)
+    }
+    base::cat(text, "\n", file = log_file, append = TRUE)
+    invisible(x)
+  }
+
+  message <- .log_message
+  warning <- .log_warning
+  cat <- .log_cat
+  print <- .log_print
   counts_mat <- tryCatch(
     Seurat::GetAssayData(seurat, assay = assay, layer = "counts"),
     error = function(...) Seurat::GetAssayData(seurat, assay = assay, slot = "counts")

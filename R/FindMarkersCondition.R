@@ -17,6 +17,7 @@
 #' @param n_top_genes Number of top genes per cluster to save and make a heatmap with
 #' @param pct.in Filter threshold for top marker genes. Interpreted as percent if > 1. Default: 25
 #' @param out_dir Name of output directory
+#' @param log_file Optional path to a file where runtime messages and warnings will be written. If NULL, a file named analysis.log is created in out_dir. Default: NULL
 #' @param alpha FDR adjusted p-value threshold for significance in plotting. Default: 0.1
 #' @param assay Which assay to use. Default: 'RNA'
 #' @param test_type "LRT" (likelihood ratio test) or "Wald"
@@ -33,7 +34,7 @@
 #'   \item{params}{List of key parameters}
 #'
 #' outputs:
-#'   - .csv files with DE results per cluster. log2FC values are shrunken if test_type = "Wald" and both shrunken and raw are reported. If LRT, log2FC are from the full model without shrinkage. If 'LRT' and multiple coefficients for condition_ident are present, the first one is used for reported log2FC and factor level supplied by conditions is not respected.
+#'   - .csv files with DE results per cluster. log2FC values are shrunken if test_type = "Wald" and both shrunken and raw are reported. If LRT, log2FC are from the full model without shrinkage and no separate raw column is added. When conditions are supplied, their order is used to set the reference level for the reported log2FC.
 #'   - .pdf files with QC plots and top marker heatmap
 #'
 #' @import Seurat pheatmap DESeq2 ggplot2 ggrepel stringr utils grDevices
@@ -55,6 +56,7 @@ FindMarkersCondition <- function(seurat,
                                  n_top_genes = 15,
                                  pct.in = 25,
                                  out_dir = "FindMarkersCondition_outs",
+                                 log_file = NULL,
                                  alpha = 0.1,
                                  assay = "RNA",
                                  test_type = "LRT",
@@ -63,6 +65,62 @@ FindMarkersCondition <- function(seurat,
 
   start <- Sys.time()
   coef <- variable <- value <- NULL
+  .skip_cluster <- function(reason) {
+    stop(structure(list(message = reason), class = c("findmarkers_skip_cluster", "error", "condition")))
+  }
+
+  if (is.null(log_file)) {
+    log_file <- file.path(out_dir, "analysis.log")
+  }
+
+  .log_message <- function(...) {
+    text <- paste(..., collapse = "")
+    base::message(text)
+    log_dir <- dirname(log_file)
+    if (!identical(log_dir, ".") && nzchar(log_dir)) {
+      dir.create(log_dir, showWarnings = FALSE, recursive = TRUE)
+    }
+    base::cat(text, "\n", file = log_file, append = TRUE)
+    invisible(text)
+  }
+
+  .log_warning <- function(..., call. = FALSE) {
+    text <- paste(..., collapse = "")
+    base::warning(text, call. = call.)
+    log_dir <- dirname(log_file)
+    if (!identical(log_dir, ".") && nzchar(log_dir)) {
+      dir.create(log_dir, showWarnings = FALSE, recursive = TRUE)
+    }
+    base::cat(text, "\n", file = log_file, append = TRUE)
+    invisible(text)
+  }
+
+  .log_cat <- function(..., sep = " ", fill = FALSE, labels = NULL, append = FALSE) {
+    text <- paste(..., sep = sep)
+    base::cat(text, sep = "", fill = fill, labels = labels, append = append)
+    log_dir <- dirname(log_file)
+    if (!identical(log_dir, ".") && nzchar(log_dir)) {
+      dir.create(log_dir, showWarnings = FALSE, recursive = TRUE)
+    }
+    base::cat(text, file = log_file, append = TRUE, sep = "")
+    invisible(text)
+  }
+
+  .log_print <- function(x, ...) {
+    text <- paste(capture.output(base::print(x, ...)), collapse = "\n")
+    base::print(x, ...)
+    log_dir <- dirname(log_file)
+    if (!identical(log_dir, ".") && nzchar(log_dir)) {
+      dir.create(log_dir, showWarnings = FALSE, recursive = TRUE)
+    }
+    base::cat(text, "\n", file = log_file, append = TRUE)
+    invisible(x)
+  }
+
+  message <- .log_message
+  warning <- .log_warning
+  cat <- .log_cat
+  print <- .log_print
 
   ## ---------------------------
   ## 0. Basic input validation
@@ -161,6 +219,45 @@ FindMarkersCondition <- function(seurat,
       reduced <- ~ 1
     }
     reduced
+  }
+
+  .get_condition_coef_name <- function(dds, context, target_conditions = NULL) {
+    coef_names <- grep(paste0("^", condition_ident, "_"), resultsNames(dds), value = TRUE)
+    if (length(coef_names) == 0) {
+      stop(
+        "No '", condition_ident, "' coefficient found in resultsNames(dds) for ",
+        context, ". Available coefficients: ",
+        paste(resultsNames(dds), collapse = ", ")
+      )
+    }
+
+    if (!is.null(target_conditions) && length(target_conditions) == 2) {
+      target_name <- paste0(condition_ident, "_", target_conditions[1], "_vs_", target_conditions[2])
+      if (target_name %in% coef_names) {
+        return(target_name)
+      }
+
+      if (length(coef_names) > 1) {
+        message(
+          "Multiple '", condition_ident, "' coefficients found; using: ", coef_names[1],
+          " (requested contrast '", target_name, "' was not present)"
+        )
+      }
+    }
+
+    coef_names[1]
+  }
+
+  .get_condition_coef_names <- function(dds, context) {
+    coef_names <- grep(paste0("^", condition_ident, "_"), resultsNames(dds), value = TRUE)
+    if (length(coef_names) == 0) {
+      stop(
+        "No '", condition_ident, "' coefficients found in resultsNames(dds) for ",
+        context, ". Available coefficients: ",
+        paste(resultsNames(dds), collapse = ", ")
+      )
+    }
+    coef_names
   }
 
   # Build or validate design formula
@@ -289,8 +386,7 @@ FindMarkersCondition <- function(seurat,
       cluster_metadata <- samplecon_table[match(sample_names, samplecon_table$sample), ]
       rownames(cluster_metadata) <- sample_names
 
-      if(test_type == "Wald"){
-        # Set condition factor levels: conditions[2] as reference
+      if (!is.null(conditions)) {
         all_condition_levels <- unique(samplecon_table[[condition_ident]])
         other_levels <- setdiff(all_condition_levels, conditions)
 
@@ -298,6 +394,10 @@ FindMarkersCondition <- function(seurat,
           cluster_metadata[[condition_ident]],
           levels = c(conditions[2], conditions[1], other_levels)  # reference = conditions[2]
         )
+      }
+
+      if(test_type == "Wald"){
+        # Set condition factor levels: conditions[2] as reference
 
         if (!is.null(batch_var)) {
           cluster_metadata[[batch_var]] <- as.factor(cluster_metadata[[batch_var]])
@@ -317,9 +417,9 @@ FindMarkersCondition <- function(seurat,
                 " | ", conditions[2], ": ", n_cond2)
 
         if (n_cond1 < 2 || n_cond2 < 2) {
-          warning("Too few samples in one or both conditions for cluster ",
-                  cluster, " - skipping.")
-          return(FALSE)
+          .skip_cluster(
+            paste0("Too few samples in one or both conditions for cluster ", cluster, " - skipping.")
+          )
         }
       }
       ## 5.4 Check for batch confounding
@@ -356,8 +456,9 @@ FindMarkersCondition <- function(seurat,
       message("Genes after filtering: ", nrow(dds))
 
       if (nrow(dds) < 10) {
-        warning(paste("Very few genes remaining for cluster", cluster, "- skipping"))
-        return(FALSE)
+        .skip_cluster(
+          paste0("Very few genes remaining for cluster ", cluster, " - skipping")
+        )
       }
 
       ## 5.7 VST and DESeq2
@@ -367,6 +468,7 @@ FindMarkersCondition <- function(seurat,
       message("Running DESeq2 with ", test_type, " test...")
       if (test_type == "LRT") {
         dds <- DESeq(dds, test = "LRT", reduced = reduced_formula)
+<<<<<<< HEAD
         coef_names <- grep(condition_ident, resultsNames(dds), value = TRUE)
         if (length(coef_names) == 0) {
           stop("No '", condition_ident, "' coefficient found in resultsNames(dds)")
@@ -375,6 +477,17 @@ FindMarkersCondition <- function(seurat,
         if (length(coef_names) > 1) {
           message("Multiple '", condition_ident, "' coefficients found; using: ", coef_name)
         }
+=======
+        lrt_coef_names <- .get_condition_coef_names(
+          dds,
+          context = paste0("cluster ", cluster, " LRT coefficient expansion")
+        )
+        coef_name <- .get_condition_coef_name(
+          dds,
+          context = paste0("cluster ", cluster, " LRT reporting"),
+          target_conditions = if (length(conditions) == 2) conditions else NULL
+        )
+>>>>>>> development
         message("LRT log2FC uses coefficient: ", coef_name)
         # For LRT, request the condition coefficient explicitly so reported LFC
         # corresponds to the intended condition effect.
@@ -399,14 +512,11 @@ FindMarkersCondition <- function(seurat,
       if (test_type == "Wald") {
         message("Shrinking log2 fold changes...")
         res_raw <- as.data.frame(res)
-        coef_names <- grep(condition_ident, resultsNames(dds), value = TRUE)
-        if (length(coef_names) == 0) {
-          stop("No '", condition_ident, "' coefficient found for LFC shrinkage in cluster ", cluster)
-        }
-        coef_name <- coef_names[1]
-        if (length(coef_names) > 1) {
-          message("Multiple '", condition_ident, "' coefficients found; using: ", coef_name)
-        }
+        coef_name <- .get_condition_coef_name(
+          dds,
+          context = paste0("cluster ", cluster, " LFC shrinkage"),
+          target_conditions = conditions
+        )
 
         res_shrink <- tryCatch(
           {
@@ -435,8 +545,11 @@ FindMarkersCondition <- function(seurat,
       } else {
         message("Skipping LFC shrinkage for LRT; using raw DESeq2 results.")
         res_shrink <- as.data.frame(res)
-        if ("log2FoldChange" %in% colnames(res_shrink)) {
-          res_shrink$log2FoldChange_raw <- res_shrink$log2FoldChange
+        res_shrink$feature <- rownames(res_shrink)
+        for (coef_name in lrt_coef_names) {
+          coef_res <- as.data.frame(results(dds, name = coef_name, alpha = alpha))
+          res_shrink[[paste0("log2FoldChange_", coef_name)]] <-
+            coef_res[match(res_shrink$feature, rownames(coef_res)), "log2FoldChange"]
         }
       }
       res_shrink$sig  <- "Not significant"
@@ -637,13 +750,19 @@ FindMarkersCondition <- function(seurat,
 
       TRUE
     }, error = function(e) {
+      if (inherits(e, "findmarkers_skip_cluster")) {
+        message(e$message)
+        while (dev.cur() > 1) dev.off()
+        FALSE
+      } else 
       if (grepl("Non-integer pseudobulk counts detected", e$message, fixed = TRUE)) {
         stop(e)
+      } else {
+        message("\n!!! ERROR processing cluster ", cluster, " !!!")
+        message("Error message: ", e$message)
+        while (dev.cur() > 1) dev.off()
+        FALSE
       }
-      message("\n!!! ERROR processing cluster ", cluster, " !!!")
-      message("Error message: ", e$message)
-      while (dev.cur() > 1) dev.off()
-      FALSE
     })
 
     if (!cluster_success) {

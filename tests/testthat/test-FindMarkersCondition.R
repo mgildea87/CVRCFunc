@@ -97,6 +97,32 @@ test_that("FindMarkersCondition rejects invalid covariates", {
   )
 })
 
+test_that("FindMarkersCondition writes console output to a log file by default", {
+  seurat <- create_de_test_seurat()
+  out_dir <- tempfile("findmarkerscondition-log-")
+
+  result <- FindMarkersCondition(
+    seurat = seurat,
+    clus_ident = "seurat_clusters",
+    sample_ident = "sample_id",
+    condition_ident = "treatment",
+    conditions = c("stim", "ctrl"),
+    test_type = "Wald",
+    expfilt_counts = 1,
+    expfilt_freq = 0.25,
+    alpha = 0.5,
+    n_top_genes = 5,
+    out_dir = out_dir
+  )
+
+  expect_type(result, "list")
+  expect_true(file.exists(file.path(out_dir, "analysis.log")))
+  log_contents <- readLines(file.path(out_dir, "analysis.log"), warn = FALSE)
+  expect_true(any(grepl("Processing cluster", log_contents, fixed = TRUE)))
+
+  cleanup_test_files(out_dir)
+})
+
 test_that("FindMarkersCondition completes and writes summary outputs", {
   seurat <- create_de_test_seurat()
   out_dir <- tempfile("findmarkerscondition-success-")
@@ -163,8 +189,9 @@ test_that("FindMarkersCondition fails on non-integer pseudobulk counts", {
   cleanup_test_files(out_dir)
 })
 
-test_that("FindMarkersCondition LRT with batch uses condition coefficient direction", {
+test_that("FindMarkersCondition LRT with batch uses supplied condition direction", {
   seurat <- create_de_test_seurat()
+  seurat$treatment <- factor(seurat$treatment, levels = c("stim", "ctrl"))
   out_dir <- tempfile("findmarkerscondition-lrt-batch-")
 
   result <- FindMarkersCondition(
@@ -187,8 +214,14 @@ test_that("FindMarkersCondition LRT with batch uses condition coefficient direct
   cluster0 <- result$all_results[["0"]]
   cluster1 <- result$all_results[["1"]]
 
-  expect_true(all(c("log2FoldChange", "log2FoldChange_raw") %in% colnames(cluster0)))
-  expect_true(all(c("log2FoldChange", "log2FoldChange_raw") %in% colnames(cluster1)))
+    expect_true("log2FoldChange" %in% colnames(cluster0))
+    expect_true("log2FoldChange" %in% colnames(cluster1))
+    expect_false("log2FoldChange_raw" %in% colnames(cluster0))
+    expect_false("log2FoldChange_raw" %in% colnames(cluster1))
+    expect_true("log2FoldChange_treatment_stim_vs_ctrl" %in% colnames(cluster0))
+    expect_true("log2FoldChange_treatment_stim_vs_ctrl" %in% colnames(cluster1))
+    expect_equal(cluster0$log2FoldChange, cluster0$log2FoldChange_treatment_stim_vs_ctrl)
+    expect_equal(cluster1$log2FoldChange, cluster1$log2FoldChange_treatment_stim_vs_ctrl)
 
   genes_up_in_stim_cluster0 <- paste0("Gene", sprintf("%03d", 81:110))
   genes_up_in_ctrl_cluster1 <- paste0("Gene", sprintf("%03d", 111:140))
@@ -204,6 +237,101 @@ test_that("FindMarkersCondition LRT with batch uses condition coefficient direct
 
   expect_gt(mean_lfc_cluster0, 0)
   expect_lt(mean_lfc_cluster1, 0)
+
+  cleanup_test_files(out_dir)
+})
+
+test_that("FindMarkersCondition LRT with >3 condition levels respects supplied contrast", {
+  set.seed(42)
+
+  genes <- paste0("Gene", sprintf("%03d", seq_len(140)))
+  samples <- c(
+    "ctrl_1", "ctrl_2",
+    "other1_1", "other1_2",
+    "stim_1", "stim_2",
+    "other2_1", "other2_2"
+  )
+  condition_levels <- c("ctrl", "other1", "stim", "other2")
+  sample_conditions <- c("ctrl", "ctrl", "other1", "other1", "stim", "stim", "other2", "other2")
+
+  meta_rows <- expand.grid(
+    sample_id = samples,
+    seurat_clusters = c("0", "1"),
+    rep = seq_len(2),
+    KEEP.OUT.ATTRS = FALSE,
+    stringsAsFactors = FALSE
+  )
+  meta_rows$cell <- paste0("Cell", seq_len(nrow(meta_rows)))
+  meta_rows$treatment <- sample_conditions[match(meta_rows$sample_id, samples)]
+
+  counts <- matrix(
+    rpois(length(genes) * nrow(meta_rows), lambda = 8),
+    nrow = length(genes),
+    dimnames = list(genes, meta_rows$cell)
+  )
+
+  cluster0_cells <- meta_rows$cell[meta_rows$seurat_clusters == "0"]
+  cluster1_cells <- meta_rows$cell[meta_rows$seurat_clusters == "1"]
+  stim_cells <- meta_rows$cell[meta_rows$treatment == "stim"]
+  ctrl_cells <- meta_rows$cell[meta_rows$treatment == "ctrl"]
+
+  counts[1:40, cluster0_cells] <- counts[1:40, cluster0_cells] + 60L
+  counts[41:80, cluster1_cells] <- counts[41:80, cluster1_cells] + 60L
+  counts[81:110, intersect(cluster0_cells, stim_cells)] <- counts[81:110, intersect(cluster0_cells, stim_cells)] + 50L
+  counts[111:140, intersect(cluster1_cells, ctrl_cells)] <- counts[111:140, intersect(cluster1_cells, ctrl_cells)] + 50L
+
+  meta.data <- data.frame(
+    seurat_clusters = factor(meta_rows$seurat_clusters),
+    cluster_label = factor(ifelse(meta_rows$seurat_clusters == "0", "alpha", "beta")),
+    treatment = factor(meta_rows$treatment, levels = condition_levels),
+    sample_id = factor(meta_rows$sample_id, levels = samples),
+    row.names = meta_rows$cell
+  )
+
+  seurat <- Seurat::CreateSeuratObject(
+    counts = Matrix::Matrix(counts, sparse = TRUE),
+    meta.data = meta.data
+  )
+  seurat <- Seurat::NormalizeData(seurat, normalization.method = "LogNormalize", scale.factor = 10000, verbose = FALSE)
+
+  out_dir <- tempfile("findmarkerscondition-lrt-multilevel-")
+  result <- FindMarkersCondition(
+    seurat = seurat,
+    clus_ident = "seurat_clusters",
+    sample_ident = "sample_id",
+    condition_ident = "treatment",
+    conditions = c("stim", "ctrl"),
+    test_type = "LRT",
+    expfilt_counts = 1,
+    expfilt_freq = 0.25,
+    alpha = 0.5,
+    n_top_genes = 5,
+    out_dir = out_dir
+  )
+
+  cluster0 <- result$all_results[["0"]]
+  cluster1 <- result$all_results[["1"]]
+
+  lfc_cols_cluster0 <- grep("^log2FoldChange_treatment_", colnames(cluster0), value = TRUE)
+  lfc_cols_cluster1 <- grep("^log2FoldChange_treatment_", colnames(cluster1), value = TRUE)
+
+  mean_lfc_cluster0 <- mean(
+    cluster0$log2FoldChange[cluster0$feature %in% paste0("Gene", sprintf("%03d", 81:110))],
+    na.rm = TRUE
+  )
+  mean_lfc_cluster1 <- mean(
+    cluster1$log2FoldChange[cluster1$feature %in% paste0("Gene", sprintf("%03d", 111:140))],
+    na.rm = TRUE
+  )
+
+  expect_gt(mean_lfc_cluster0, 0)
+  expect_lt(mean_lfc_cluster1, 0)
+  expect_true("log2FoldChange_treatment_stim_vs_ctrl" %in% lfc_cols_cluster0)
+  expect_true("log2FoldChange_treatment_stim_vs_ctrl" %in% lfc_cols_cluster1)
+  expect_equal(length(lfc_cols_cluster0), 3L)
+  expect_equal(length(lfc_cols_cluster1), 3L)
+  expect_equal(cluster0$log2FoldChange, cluster0$log2FoldChange_treatment_stim_vs_ctrl)
+  expect_equal(cluster1$log2FoldChange, cluster1$log2FoldChange_treatment_stim_vs_ctrl)
 
   cleanup_test_files(out_dir)
 })

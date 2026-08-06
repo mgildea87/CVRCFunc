@@ -79,7 +79,7 @@ Invisibly returns a list with:
   \item{params}{List of key parameters}
 
 outputs:
-  - .csv files with DE results per cluster. log2FC values are shrunken if test_type = "Wald" and both shrunken and raw are reported. If LRT, log2FC are from the full model without shrinkage.
+  - .csv files with DE results per cluster. log2FC values are shrunken if test_type = "Wald" and both shrunken and raw are reported. If LRT, the main log2FC is from the full model without shrinkage, no separate raw column is added, and extra columns are included for each condition coefficient as log2FoldChange_<coef_name>.
   - .pdf files with QC plots and top marker heatmap
 }
 \description{

@@ -26,6 +26,7 @@ Performs pseudobulk differential expression for every cluster using sample-level
 - `sample_ident`: sample identifier column used for pseudobulking.
 - optional `batch_var`, `covariates`, or custom `design_formula`.
 - outputs CSV and PDF QC files into `out_dir`.
+- optionally writes runtime messages and warnings to a log file via `log_file`.
 
 ### `FindMarkersCondition()`
 Runs pseudobulk DE per cluster between two conditions.
@@ -35,6 +36,7 @@ Runs pseudobulk DE per cluster between two conditions.
 - supports `batch_var`, `covariates`, and custom `design_formula`.
 - use `test_type = "LRT"` for likelihood ratio tests or `test_type = "Wald"` for Wald tests.
 - with `test_type = "LRT"`, the function uses a reduced model automatically when no custom design is provided. The reduced design will be the full design without condition_ident. If conditions == NULL (default) test will be run including all levels of condition_ident. Otherwise data will be subset to the 2 specified levels of condition_ident.
+- LRT output uses the raw DESeq2 `log2FC` as the main `log2FoldChange` column, does not add a separate `log2FoldChange_raw` column, and adds one `log2FoldChange_<coef_name>` column per condition coefficient.
 
 ### `FindMarkers()`
 Compares two groups of cells defined by a metadata identity.
@@ -60,7 +62,8 @@ bulk_res <- FindMarkersBulk(
 	sample_ident = "sample_id",
 	batch_var = "batch",
 	covariates = c("age", "sex"),
-	out_dir = "FindMarkersBulk_output"
+	out_dir = "FindMarkersBulk_output",
+	log_file = file.path("FindMarkersBulk_output", "analysis.log")
 )
 
 # Condition DE within clusters (LRT)
