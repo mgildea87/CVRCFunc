@@ -53,6 +53,9 @@ FindMarkersBulk <- function(seurat,
                             NormalizeData = TRUE) {
   start <- Sys.time()
   coef <- variable <- value <- NULL
+  .skip_cluster <- function(reason) {
+    stop(structure(list(message = reason), class = c("findmarkers_skip_cluster", "error", "condition")))
+  }
 
   ## ---------------------------
   ## 0. Basic input validation
@@ -270,8 +273,9 @@ FindMarkersBulk <- function(seurat,
       # Check minimal samples for each group
       if (sum(cluster_metadata$iscluster == cluster) < 2 ||
           sum(cluster_metadata$iscluster == "other") < 2) {
-        warning("Too few samples in cluster or other for cluster ", cluster, " - skipping.")
-        return(FALSE)
+        .skip_cluster(
+          paste0("Too few samples in cluster or other for cluster ", cluster, " - skipping.")
+        )
       }
 
       ## 5.5 Check for confounding batch
@@ -309,8 +313,9 @@ FindMarkersBulk <- function(seurat,
       message("Genes after filtering: ", nrow(dds))
 
       if (nrow(dds) < 10) {
-        warning(paste("Very few genes remaining for cluster", cluster, "- skipping"))
-        return(FALSE)
+        .skip_cluster(
+          paste0("Very few genes remaining for cluster ", cluster, " - skipping")
+        )
       }
 
       ## 5.8 VST and DESeq2
@@ -533,14 +538,20 @@ FindMarkersBulk <- function(seurat,
 
       TRUE
     }, error = function(e) {
+      if (inherits(e, "findmarkers_skip_cluster")) {
+        message(e$message)
+        while (dev.cur() > 1) dev.off()
+        FALSE
+      } else 
       if (grepl("Non-integer pseudobulk counts detected", e$message, fixed = TRUE)) {
         stop(e)
+      } else {
+        message("\n!!! ERROR processing cluster ", cluster, " !!!")
+        message("Error message: ", e$message)
+        # Close any open graphics devices
+        while (dev.cur() > 1) dev.off()
+        FALSE
       }
-      message("\n!!! ERROR processing cluster ", cluster, " !!!")
-      message("Error message: ", e$message)
-      # Close any open graphics devices
-      while (dev.cur() > 1) dev.off()
-      FALSE
     })
     if (!cluster_success) {
       message("*** SKIPPING cluster ", cluster, " - continuing to next cluster ***")
