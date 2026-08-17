@@ -97,6 +97,33 @@ test_that("FindMarkersCondition rejects invalid covariates", {
   )
 })
 
+test_that("FindMarkersCondition removes genes below pct.in before DESeq", {
+  seurat <- create_de_test_seurat()
+  out_dir <- tempfile("findmarkerscondition-pctin-")
+
+  result <- FindMarkersCondition(
+    seurat = seurat,
+    clus_ident = "seurat_clusters",
+    sample_ident = "sample_id",
+    condition_ident = "treatment",
+    conditions = c("stim", "ctrl"),
+    test_type = "Wald",
+    expfilt_counts = 1,
+    expfilt_freq = 0.25,
+    alpha = 0.5,
+    n_top_genes = 5,
+    pct.in = 0.5,
+    out_dir = out_dir
+  )
+
+  expect_type(result, "list")
+  expect_true(all(vapply(result$all_results, function(x) {
+    all(x$pct_in_stim >= 0.5 | is.na(x$pct_in_stim))
+  }, logical(1))))
+
+  cleanup_test_files(out_dir)
+})
+
 test_that("FindMarkersCondition writes console output to a log file by default", {
   seurat <- create_de_test_seurat()
   out_dir <- tempfile("findmarkerscondition-log-")

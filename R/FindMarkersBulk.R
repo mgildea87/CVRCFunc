@@ -10,8 +10,12 @@
 #'        \code{expfilt_freq * n_samples} will be kept. Default: 1
 #' @param expfilt_freq fraction of samples that must pass \code{expfilt_counts} threshold. Default: 0.5
 #' @param n_top_genes number of top genes per cluster to save and make a heatmap with
-#' @param pct.in Filter threshold for top marker genes per cluster.
-#'        Interpreted as percent if > 1 (e.g. 25 means 25\%). If <= 1, treated as fraction. Default: 25. Output is a fraction.
+#' @param pct.in Minimum fraction of cells in the focal cluster expressing a gene.
+#'        Values greater than 1 are interpreted as percentages (e.g. 5 means 5\%),
+#'        while values from 0 to 1 are interpreted as fractions. Genes expressed
+#'        in fewer than this fraction of focal-cluster cells are removed from the
+#'        count matrix before DESeq2 is run. The comparison is inclusive, so genes
+#'        expressed in exactly the threshold fraction are retained. Default: 5.
 #' @param out_dir Name of output directory
 #' @param log_file Optional path to a file where runtime messages and warnings will be written. If NULL, a file named analysis.log is created in out_dir. Default: NULL
 #' @param alpha FDR adjusted p-value threshold for significance in plotting. Default: 0.1
@@ -45,7 +49,7 @@ FindMarkersBulk <- function(seurat,
                             expfilt_counts = 1,
                             expfilt_freq = 0.5,
                             n_top_genes = 15,
-                            pct.in = 25,
+                            pct.in = 5,
                             out_dir = "FindMarkersBulk_outs",
                             log_file = NULL,
                             alpha = 0.1,
@@ -343,12 +347,38 @@ FindMarkersBulk <- function(seurat,
         }
       }
 
-      ## 5.6 Create DESeq2 object
+      ## 5.6 Filter genes below the requested percentage-expression threshold
       cluster_counts <- t(as.matrix(pb))
       if (any(abs(cluster_counts - round(cluster_counts)) > .Machine$double.eps^0.5, na.rm = TRUE)) {
         stop("Non-integer pseudobulk counts detected for cluster ", cluster,
              ". DESeq2 requires raw integer counts.")
       }
+      cells_in <- colnames(seurat)[seurat@meta.data[[clus_ident]] == cluster]
+      cells_out <- colnames(seurat)[seurat@meta.data[[clus_ident]] != cluster]
+      pct_df_cluster <- CalcPctInOutByCells(
+        seurat    = seurat,
+        cells_in  = cells_in,
+        cells_out = cells_out,
+        assay     = assay,
+        slot      = "counts"
+      )
+      pct_keep <- pct_df_cluster$feature[pct_df_cluster$pct_in >= pct_in_threshold]
+      genes_removed <- setdiff(rownames(cluster_counts), pct_keep)
+      if (length(genes_removed) > 0) {
+        message("Removing ", length(genes_removed),
+                " genes below pct.in threshold for cluster ", cluster)
+      }
+      cluster_counts <- cluster_counts[
+        intersect(rownames(cluster_counts), pct_keep),
+        ,
+        drop = FALSE
+      ]
+      if (nrow(cluster_counts) == 0) {
+        .skip_cluster(
+          paste0("No genes remain after pct.in filtering for cluster ", cluster, " - skipping")
+        )
+      }
+
       # DESeq2 requires integer count data.
       storage.mode(cluster_counts) <- "integer"
       cluster_counts <- as.data.frame(cluster_counts)
@@ -359,7 +389,7 @@ FindMarkersBulk <- function(seurat,
         design    = design_formula
       )
 
-      ## 5.7 Gene filtering
+      ## 5.7 Filter genes by pseudobulk counts
       message("Filtering genes: min ", expfilt_counts, " counts in ",
               expfilt_freq * 100, "% of samples")
       keep <- rowSums(counts(dds) >= expfilt_counts) >= expfilt_freq * nrow(cluster_metadata)
@@ -578,7 +608,7 @@ FindMarkersBulk <- function(seurat,
         !is.na(padj) &
           padj < alpha &
           !is.na(pct_in) &
-          pct_in > pct_in_threshold &
+          pct_in >= pct_in_threshold &
           log2FoldChange > 0
       )
 

@@ -4,6 +4,12 @@
 #' @param sample_ident Sample identities. Identity class that indicates how to partition samples
 #' @param group_1 Identity of cells within \code{clus_ident} to compare
 #' @param group_2 Identity of cells within \code{clus_ident} to compare
+#' @param pct.in Minimum fraction of cells in \code{group_1} expressing a gene.
+#'        Values greater than 1 are interpreted as percentages (e.g. 5 means 5\%),
+#'        while values from 0 to 1 are interpreted as fractions. Genes expressed
+#'        in fewer than this fraction of cells in \code{group_1} are removed from
+#'        the count matrix before DESeq2 is run. The comparison is inclusive, so
+#'        genes expressed in exactly the threshold fraction are retained. Default: 5.
 #' @param expfilt_freq genes that have greater than \code{expfilt_counts} in greater than \code{expfilt_freq} fraction of cells will be kept for the DESeq2 model. 0.5 by default
 #' @param expfilt_counts genes with less than \code{expfilt_counts} in \code{expfilt_freq * sample number} will be removed from DESeq2 model. 1 by default.
 #' @param alpha FDR adjusted p-value threshold for significance in plotting. 0.1 by default.
@@ -26,6 +32,7 @@ FindMarkers <- function(seurat,
                         batch_var = NULL,
                         covariates = NULL,
                         design_formula = NULL,
+                        pct.in = 5,
                         expfilt_counts = 1,
                         expfilt_freq = 0.5,
                         out_dir = "FindMarkers",
@@ -320,8 +327,8 @@ FindMarkers <- function(seurat,
     cat("\n")
   }
 
-  # Create DESeq2 object
-  cat("Creating DESeq2 object...\n")
+  # Filter genes below the requested percentage-expression threshold
+  cat("Filtering genes below pct.in threshold...\n")
   count_data <- as.matrix(cluster_counts)
   non_integer_mask <- abs(count_data - round(count_data)) > .Machine$double.eps^0.5
   if (any(non_integer_mask, na.rm = TRUE)) {
@@ -332,6 +339,32 @@ FindMarkers <- function(seurat,
       "DESeq2 requires raw integer counts."
     )
   }
+  pct_in_threshold <- if (pct.in > 1) pct.in / 100 else pct.in
+  cells_in <- colnames(seurat)[seurat@meta.data[[clus_ident]] == group_1]
+  cells_out <- colnames(seurat)[seurat@meta.data[[clus_ident]] == group_2]
+  pct_df <- CalcPctInOutByCells(
+    seurat    = seurat,
+    cells_in  = cells_in,
+    cells_out = cells_out,
+    assay     = assay,
+    slot      = "counts"
+  )
+  pct_keep <- pct_df$feature[pct_df$pct_in >= pct_in_threshold]
+  genes_removed <- setdiff(rownames(count_data), pct_keep)
+  if (length(genes_removed) > 0) {
+    cat(paste("Removing", length(genes_removed),
+              "genes below pct.in threshold\n"))
+  }
+  count_data <- count_data[
+    intersect(rownames(count_data), pct_keep),
+    ,
+    drop = FALSE
+  ]
+  if (nrow(count_data) == 0) {
+    stop("No genes remain after pct.in filtering")
+  }
+
+  cat("Creating DESeq2 object...\n")
   # DESeq2 requires integer count data.
   storage.mode(count_data) <- "integer"
   dds <- DESeqDataSetFromMatrix(count_data,

@@ -13,6 +13,7 @@ FindMarkers(
   batch_var = NULL,
   covariates = NULL,
   design_formula = NULL,
+  pct.in = 5,
   expfilt_counts = 1,
   expfilt_freq = 0.5,
   out_dir = "FindMarkers",
@@ -31,6 +32,13 @@ FindMarkers(
 \item{group_1}{Identity of cells within \code{clus_ident} to compare}
 
 \item{group_2}{Identity of cells within \code{clus_ident} to compare}
+
+\item{pct.in}{Minimum fraction of cells in \code{group_1} expressing a gene.
+  Values greater than 1 are interpreted as percentages (e.g. 5 means 5\%),
+  while values from 0 to 1 are interpreted as fractions. Genes expressed
+  in fewer than this fraction of cells in \code{group_1} are removed from
+  the count matrix before DESeq2 is run. The comparison is inclusive, so
+  genes expressed in exactly the threshold fraction are retained. Default: 5.}
 
 \item{sample_ident}{Sample identities. Identity class that indicates how to partition samples}
 

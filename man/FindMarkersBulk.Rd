@@ -14,7 +14,7 @@ FindMarkersBulk(
   expfilt_counts = 1,
   expfilt_freq = 0.5,
   n_top_genes = 15,
-  pct.in = 25,
+  pct.in = 5,
   out_dir = "FindMarkersBulk_outs",
   alpha = 0.1,
   assay = "RNA",
@@ -43,8 +43,12 @@ FindMarkersBulk(
 
 \item{n_top_genes}{number of top genes per cluster to save and make a heatmap with}
 
-\item{pct.in}{Filter threshold for top marker genes per cluster.
-Interpreted as percent if > 1 (e.g. 25 means 25\%). If <= 1, treated as fraction. Default: 25. Output is a fraction.}
+\item{pct.in}{Minimum fraction of cells in the focal cluster expressing a gene.
+  Values greater than 1 are interpreted as percentages (e.g. 5 means 5\%),
+  while values from 0 to 1 are interpreted as fractions. Genes expressed
+  in fewer than this fraction of focal-cluster cells are removed from the
+  count matrix before DESeq2 is run. The comparison is inclusive, so genes
+  expressed in exactly the threshold fraction are retained. Default: 5.}
 
 \item{out_dir}{Name of output directory}
 

@@ -15,7 +15,12 @@
 #'        \code{expfilt_freq * n_samples} samples will be kept. Default: 1
 #' @param expfilt_freq Fraction of samples that must pass \code{expfilt_counts} threshold. Default: 0.5
 #' @param n_top_genes Number of top genes per cluster to save and make a heatmap with
-#' @param pct.in Filter threshold for top marker genes. Interpreted as percent if > 1. Default: 25
+#' @param pct.in Minimum fraction of cells in the first condition expressing a gene.
+#'        Values greater than 1 are interpreted as percentages (e.g. 5 means 5\%),
+#'        while values from 0 to 1 are interpreted as fractions. Genes expressed
+#'        in fewer than this fraction of cells in the first condition are removed
+#'        from the count matrix before DESeq2 is run. The comparison is inclusive,
+#'        so genes expressed in exactly the threshold fraction are retained. Default: 5.
 #' @param out_dir Name of output directory
 #' @param log_file Optional path to a file where runtime messages and warnings will be written. If NULL, a file named analysis.log is created in out_dir. Default: NULL
 #' @param alpha FDR adjusted p-value threshold for significance in plotting. Default: 0.1
@@ -54,7 +59,7 @@ FindMarkersCondition <- function(seurat,
                                  expfilt_counts = 1,
                                  expfilt_freq = 0.5,
                                  n_top_genes = 15,
-                                 pct.in = 25,
+                                 pct.in = 5,
                                  out_dir = "FindMarkersCondition_outs",
                                  log_file = NULL,
                                  alpha = 0.1,
@@ -433,12 +438,43 @@ FindMarkersCondition <- function(seurat,
         }
       }
 
-      ## 5.5 Create DESeq2 object
+      ## 5.5 Filter genes below the requested percentage-expression threshold before DESeq
       count_data <- as.matrix(cluster_counts)
       if (any(abs(count_data - round(count_data)) > .Machine$double.eps^0.5, na.rm = TRUE)) {
         stop("Non-integer pseudobulk counts detected for cluster ", cluster,
              ". DESeq2 requires raw integer counts.")
       }
+
+      cells_cond1 <- colnames(seurat)[
+        seurat@meta.data[[clus_ident]] == cluster &
+          seurat@meta.data[[condition_ident]] == conditions[1]
+      ]
+      cells_cond2 <- colnames(seurat)[
+        seurat@meta.data[[clus_ident]] == cluster &
+          seurat@meta.data[[condition_ident]] == conditions[2]
+      ]
+
+      pct_df_cond1 <- CalcPctInOutByCells(
+        seurat    = seurat,
+        cells_in  = cells_cond1,
+        cells_out = cells_cond2,
+        assay     = assay,
+        slot      = "counts"
+      )
+
+      pct_keep <- pct_df_cond1$feature[pct_df_cond1$pct_in >= pct_in_threshold]
+      genes_removed <- setdiff(rownames(count_data), pct_keep)
+      if (length(genes_removed) > 0) {
+        message("Removing ", length(genes_removed), " genes below pct.in threshold for cluster ", cluster)
+      }
+      count_data <- count_data[intersect(rownames(count_data), pct_keep), , drop = FALSE]
+
+      if (nrow(count_data) == 0) {
+        .skip_cluster(
+          paste0("No genes remain after pct.in filtering for cluster ", cluster, " - skipping")
+        )
+      }
+
       # DESeq2 requires integer count data.
       storage.mode(count_data) <- "integer"
       dds <- DESeqDataSetFromMatrix(
@@ -468,16 +504,6 @@ FindMarkersCondition <- function(seurat,
       message("Running DESeq2 with ", test_type, " test...")
       if (test_type == "LRT") {
         dds <- DESeq(dds, test = "LRT", reduced = reduced_formula)
-<<<<<<< HEAD
-        coef_names <- grep(condition_ident, resultsNames(dds), value = TRUE)
-        if (length(coef_names) == 0) {
-          stop("No '", condition_ident, "' coefficient found in resultsNames(dds)")
-        }
-        coef_name <- coef_names[1]
-        if (length(coef_names) > 1) {
-          message("Multiple '", condition_ident, "' coefficients found; using: ", coef_name)
-        }
-=======
         lrt_coef_names <- .get_condition_coef_names(
           dds,
           context = paste0("cluster ", cluster, " LRT coefficient expansion")
@@ -487,7 +513,6 @@ FindMarkersCondition <- function(seurat,
           context = paste0("cluster ", cluster, " LRT reporting"),
           target_conditions = if (length(conditions) == 2) conditions else NULL
         )
->>>>>>> development
         message("LRT log2FC uses coefficient: ", coef_name)
         # For LRT, request the condition coefficient explicitly so reported LFC
         # corresponds to the intended condition effect.
@@ -660,22 +685,6 @@ FindMarkersCondition <- function(seurat,
       dev.off()
 
       ## 5.11 Attach pct_in per condition using CalcPctInOutByCells
-      cells_cond1 <- colnames(seurat)[
-        seurat@meta.data[[clus_ident]] == cluster &
-          seurat@meta.data[[condition_ident]] == conditions[1]
-      ]
-      cells_cond2 <- colnames(seurat)[
-        seurat@meta.data[[clus_ident]] == cluster &
-          seurat@meta.data[[condition_ident]] == conditions[2]
-      ]
-
-      pct_df_cond1 <- CalcPctInOutByCells(
-        seurat    = seurat,
-        cells_in  = cells_cond1,
-        cells_out = cells_cond2,
-        assay     = assay,
-        slot      = "counts"
-      )
       pct_df_cond2 <- CalcPctInOutByCells(
         seurat    = seurat,
         cells_in  = cells_cond2,
@@ -736,7 +745,7 @@ FindMarkersCondition <- function(seurat,
         !is.na(res_shrink$padj) &
         res_shrink$padj < alpha &
         !is.na(res_shrink[[pct_col]]) &
-        res_shrink[[pct_col]] > pct_in_threshold &
+        res_shrink[[pct_col]] >= pct_in_threshold &
         res_shrink$log2FoldChange > 0,
       ]
       if (nrow(res_sig) > 0) {
