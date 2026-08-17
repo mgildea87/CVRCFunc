@@ -349,7 +349,10 @@ FindMarkers <- function(seurat,
     assay     = assay,
     slot      = "counts"
   )
-  pct_keep <- pct_df$feature[pct_df$pct_in >= pct_in_threshold]
+  pct_cond_1 <- pct_df$feature[pct_df$pct_in >= pct_in_threshold]
+  pct_cond_2 <- pct_df$feature[pct_df$pct_out >= pct_in_threshold]
+  pct_keep <- unique(c(pct_cond_1, pct_cond_2))
+
   genes_removed <- setdiff(rownames(count_data), pct_keep)
   if (length(genes_removed) > 0) {
     cat(paste("Removing", length(genes_removed),

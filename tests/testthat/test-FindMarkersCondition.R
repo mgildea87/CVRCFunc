@@ -120,6 +120,9 @@ test_that("FindMarkersCondition removes genes below pct.in before DESeq", {
   expect_true(all(vapply(result$all_results, function(x) {
     all(x$pct_in_stim >= 0.5 | is.na(x$pct_in_stim))
   }, logical(1))))
+  expect_true(all(vapply(result$all_results, function(x) {
+    all(x$pct_out_stim >= 0.5 | is.na(x$pct_out_stim))
+  }, logical(1))))
 
   cleanup_test_files(out_dir)
 })
